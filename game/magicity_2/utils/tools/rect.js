@@ -21,5 +21,8 @@ Rect.prototype.insertDOM = function(){
     document.getElementById(this.id).style.backgroundColor = `${color}`;
     return this.id
 };
+Rect.prototype.intersec = function(rect) {
+    return (this.x < rect.x + rect.width && this.x + rect.width > rect.x && this.y < rect.y + rect.height && this.height + this.y > rect.y) ? true : false;
+}
 
 export {Rect}

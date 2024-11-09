@@ -1,5 +1,7 @@
+import { controlls } from "./tools/game/interacts/controlls.js";
 import { Player } from "./tools/game/ojects/player.js";
 import { keyboard } from "./tools/keyboard.js";
+import { stateMachine } from "./tools/stateMachin/stateMachin.js";
 let mainLoop = {
     idEjecute: null,
     lastReg:0,
@@ -7,7 +9,6 @@ let mainLoop = {
     fps:0,
     iterator:function (regTemp) {
         mainLoop.idEjecute = window.requestAnimationFrame(mainLoop.iterator);
-
         mainLoop.refresh(regTemp);
         mainLoop.draw(regTemp)
 
@@ -23,6 +24,7 @@ let mainLoop = {
     },
     refresh:function(regTemp){
         keyboard.restart();
+        controlls.refresh();
         mainLoop.aps++;
     },
     draw:function(regTemp){

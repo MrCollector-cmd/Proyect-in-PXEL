@@ -20,6 +20,9 @@ let size = {
     },
     getTotalTiles:function(){
         return size.getTilesHeight * size.getTilesWitdth;
+    },
+    getPxHeight:function(){
+        return size.height
     }
 }
 
