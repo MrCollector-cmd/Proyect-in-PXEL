@@ -5,25 +5,26 @@ function Game(player){
     this.map = new Rect(2 * size.tils,4 * size.tils,400,100,'solid');
     this.pColl = false;
     this.map.insertDOM()
-    this.p.gravity(this.pColl)
 
-    const coll=(pla, map)=> {
-        if(map.intersec(pla.player)) {
-            return true;
-        }else{return false}
-    }
-    const checkCollision= ()=> {
-        if (coll(this.p, this.map)) {
-            this.pColl = true
-            this.p.gravity(this.pColl)
-        }else{
-            this.pColl = false
-            this.p.gravity(this.pColl)
-        }
-        requestAnimationFrame(checkCollision);
+    this.gameLoop();
+}
+
+Game.prototype.gameLoop = function() {
+    // Apply gravity first
+    this.p.gravity(this.pColl);
+    
+    // Update player position
+    this.p.move();
+    
+    // Check collisions
+    if (this.map.intersec(this.p.player)) {
+        this.pColl = true;
+        this.p.handleCollision(this.map);
+    } else {
+        this.pColl = false;
     }
     
-    // Inicia la comprobación de colisión
-    checkCollision()
+    // Request next frame
+    requestAnimationFrame(() => this.gameLoop());
 }
 export {Game}

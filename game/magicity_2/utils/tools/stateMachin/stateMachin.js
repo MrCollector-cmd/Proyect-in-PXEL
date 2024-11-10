@@ -4,7 +4,9 @@ import { Player } from "../game/ojects/player.js";
 let p = new Player(2,2);
 let stateMachine = {
     stateAct: null,
+    player: p,
     ini: function(e){
+        console.log('StateMachine initialized with state:', e);
         stateMachine.refreshState(e)
     },
     refreshState:function(newEvent){
@@ -16,7 +18,8 @@ let stateMachine = {
             case states.MENU_SUB:
                 break;
             case states.GAME_ON:
-                    let game = new Game(p);
+                console.log('Starting game...');
+                let game = new Game(p);
                 break;
             case states.GAME_PAUSE:
                 break;
