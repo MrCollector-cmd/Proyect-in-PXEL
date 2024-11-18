@@ -1,29 +1,33 @@
-import { Rect } from "../rect.js";
-import { size } from "../size.js";
-function Game(player){
-    this.p = player;
-    this.map = new Rect(2 * size.tils,4 * size.tils,400,100,'solid');
-    this.pColl = false;
-    this.map.insertDOM()
-    this.p.gravity(this.pColl)
 
-    const coll=(pla, map)=> {
-        if(map.intersec(pla.player)) {
-            return true;
-        }else{return false}
-    }
-    const checkCollision= ()=> {
-        if (coll(this.p, this.map)) {
-            this.pColl = true
-            this.p.gravity(this.pColl)
-        }else{
-            this.pColl = false
-            this.p.gravity(this.pColl)
-        }
-        requestAnimationFrame(checkCollision);
-    }
-    
-    // Inicia la comprobación de colisión
-    checkCollision()
+import { collsObjects } from "./interacts/collsObjects.js";
+import { Map } from "./ojects/map.js";
+
+function Game(player) {
+    let downMap = new Map();
+    this.p = player;
+
+    // Inicializar el primer chunk
+    downMap.initialize();
+    this.map = downMap.createAndDraw();
+
+    // Avanzar y agregar más chunks si es necesario
+    downMap.advanceChunk(); // Dibujar el segundo chunk
+    this.map = this.map.concat(downMap.map); // Agregar los nuevos rectángulos
+
+    // Asignar los objetos de colisión al jugador
+    this.p.mapObjects = this.map;
+
+    // Aplicar la gravedad al jugador con el mapa
+    this.p.gravity(this.map);
+
+    // Configurar la detección de colisiones
+    collsObjects.pla = this.p;
+    collsObjects.map = this.map;
+    collsObjects.checkCollision();
+
+    // Actualizar el estado del jugador y el mapa después de las colisiones
+    this.p = collsObjects.pla;
+    this.map = collsObjects.map;
 }
-export {Game}
+
+export { Game };

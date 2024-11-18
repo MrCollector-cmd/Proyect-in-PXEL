@@ -2,6 +2,7 @@ import { keyboard } from "../../keyboard.js"
 import { controllsKey } from "./controllsKeys.js"
 
 let controlls = {
+    pushUp:false,
     up:false,
     down:false,
     left:false,
