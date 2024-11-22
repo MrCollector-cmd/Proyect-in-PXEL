@@ -9,17 +9,23 @@ function Map() {
     this.objectsInMap = [];
     this.map = [];
 }
+// Método para obtener un patrón aleatorio de la lista de patrones
+Map.prototype.getRandomPatron = function() {
+    const keys = Object.keys(this.patrons); // Obtener las claves de los patrones
+    const randomIndex = Math.floor(Math.random() * keys.length); // Seleccionar un índice aleatorio
+    return this.patrons[keys[randomIndex]]; // Devolver el patrón aleatorio
+};
 
 Map.prototype.locatePoints = function(chunkIndex) {
     let obj = [];
     let offsetX = chunkIndex * this.chunkSize; // Desplazamiento en X para el chunk actual
 
-    // La altura del mapa sigue siendo la misma
-    this.height = size.getTilesHeight();
+    // Obtener un patrón aleatorio
+    let randomPatron = this.getRandomPatron();
 
     for (let y = 0; y < this.height; y++) {
         // Obtener la fila de la matriz de patrones, con repetición si es necesario
-        let posActY = this.patrons.patronOne[y % this.chunkSize];
+        let posActY = randomPatron[y % this.chunkSize];
 
         for (let x = 0; x < this.chunkSize; x++) {
             if (posActY[x] === 1) {

@@ -27,6 +27,7 @@ let stateMachine = {
     refresh:function(regTemp){ 
         if(stateMachine.stateAct[1] === 3){
             p.move()
+            
         }
     },
     draw: function(){

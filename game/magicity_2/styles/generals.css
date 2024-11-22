@@ -1,9 +1,17 @@
-*{
+/* 
+Ocultar las barras de desplazamiento */
+body {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
-body{
-    height: 100vh;
-    width: 100vw;
+
+#game-world {
+    position: absolute; /* Esto asegura que el contenedor pueda moverse libremente */
+    top: 0;
+    left: 0;
+    width: 100%; /* Asegúrate de que ocupe todo el ancho de la pantalla */
+    height: 100%; /* Y toda la altura de la pantalla */
+
+    will-change: transform; /* Optimización para cambios en la propiedad transform */
 }
