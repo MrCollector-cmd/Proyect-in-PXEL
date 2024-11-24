@@ -1,7 +1,7 @@
 import { Game } from "../game/game.js";
 import { states } from "./states.js";
 import { Player } from "../game/ojects/player.js";
-let p = new Player(2,4);
+let p = new Player(2,3);
 let stateMachine = {
     stateAct: [],
     ini: function(e){

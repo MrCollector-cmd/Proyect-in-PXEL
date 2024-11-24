@@ -3,66 +3,56 @@ const collsObjects = {
     pCollX: false,
     pla: null,
     map: null,
-    // collition: function () {
-    //     for (let i = 0; i < collsObjects.map.length; i++) {
-    //         if (collsObjects.pla.player.checkCollision(collsObjects.map[i]) === 'bottom') {
-    //             return -2
-    //         }
-    //         if (collsObjects.pla.player.checkCollision(collsObjects.map[i]) === 'top') {
-    //             return 2
-    //         }if (collsObjects.pla.player.checkCollision(collsObjects.map[i]) === 'left') {
-    //             return 1
-    //         }if (collsObjects.pla.player.checkCollision(collsObjects.map[i]) === 'right') {
-    //             return -1
-    //         }
-    //     }
-    // }
+    
+    // Función para detectar colisiones
     collition: function () {
         let collitionArray = [];
-        
+
         for (let i = 0; i < collsObjects.map.length; i++) {
             // Verificar la colisión y obtener el resultado
-            let collisionResult = collsObjects.pla.player.checkCollision(collsObjects.map[i])
+            let collisionResult = collsObjects.pla.player.checkCollision(collsObjects.map[i]);
             if (Array.isArray(collisionResult)) {
                 if (collisionResult.includes('bottom')) {
-                    collitionArray.push(-2)
+                    collitionArray.push(-2);
                 }
                 if (collisionResult.includes('top')) {
-                    collitionArray.push(2)
+                    collitionArray.push(2);
                 }
                 if (collisionResult.includes('left')) {
-                    collitionArray.push(1)
+                    collitionArray.push(1);
                 }
                 if (collisionResult.includes('right')) {
-                    collitionArray.push(-1)
+                    collitionArray.push(-1);
                 }
             }
         }
-        return collitionArray
-    }
-    ,
-    checkCollision: function (){
-        collsObjects.pla.refreshColl();
-        let sideOfColitions = collsObjects.collition(collsObjects.pla, collsObjects.map);
+        return collitionArray;
+    },
+
+    // Función para revisar las colisiones y ajustar la posición
+    checkCollision: function () {
+        collsObjects.pla.refreshColl(); // Reiniciar las colisiones antes de cada movimiento
+        let sideOfColitions = collsObjects.collition();
+
         if (Array.isArray(sideOfColitions)) {
-            if ( sideOfColitions.includes(2)) {
-                collsObjects.pColl = true
-                collsObjects.pla.pCollTop = collsObjects.pColl
+            // Colisión superior
+            if (sideOfColitions.includes(2)) {
+                collsObjects.pla.pCollTop = true;
             }
-            if(sideOfColitions.includes(-2)) {
-                collsObjects.pColl = true
-                collsObjects.pla.pCollButton = collsObjects.pColl
-            }if(sideOfColitions.includes(-1)){
-                collsObjects.pCollX = true
-                collsObjects.pla.pCollRight = collsObjects.pCollX
+            // Colisión inferior
+            if (sideOfColitions.includes(-2)) {
+                collsObjects.pla.pCollButton = true;
             }
-            if(sideOfColitions.includes(1)){
-                collsObjects.pCollX = true
-                collsObjects.pla.pCollLeft = collsObjects.pCollX
+            // Colisión derecha
+            if (sideOfColitions.includes(-1)) {
+                collsObjects.pla.pCollRight = true;
+            }
+            // Colisión izquierda
+            if (sideOfColitions.includes(1)) {
+                collsObjects.pla.pCollLeft = true;
             }
         }
-        requestAnimationFrame(collsObjects.checkCollision);
-        }
+    }
 };
 
 export {collsObjects}
