@@ -1,7 +1,7 @@
 import { Game } from "../game/game.js";
 import { states } from "./states.js";
 import { Player } from "../game/ojects/player.js";
-let p = new Player(2,3);
+let p = new Player(2,2);
 let stateMachine = {
     stateAct: [],
     ini: function(e){
@@ -26,8 +26,8 @@ let stateMachine = {
     },
     refresh:function(regTemp){ 
         if(stateMachine.stateAct[1] === 3){
-            p.move()
-            
+         p.move()
+    
         }
     },
     draw: function(){

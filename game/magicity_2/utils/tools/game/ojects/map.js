@@ -38,7 +38,21 @@ Map.prototype.locatePoints = function(chunkIndex) {
                     x++;
                 }
 
-                obj.push([rectStartX, y, width]); // Guardar la posición y el ancho del objeto
+                obj.push([rectStartX, y, width, 'solid']); // Guardar el objeto sólido
+            }
+            
+            // Detectar secuencias de 2s y crear un rectángulo con tipo "notCollInBords"
+            if (posActY[x] === 2) {
+                let rectStartX = x + offsetX; // Posición absoluta dentro del mapa
+                let width = 1;
+
+                // Contar cuántos 2s consecutivos hay en la misma fila
+                while (x + 1 < this.chunkSize && posActY[x + 1] === 2) {
+                    width++;
+                    x++;
+                }
+
+                obj.push([rectStartX, y, width, 'notCollInBords']); // Guardar el objeto con el tipo "notCollInBords"
             }
         }
     }
@@ -50,14 +64,15 @@ Map.prototype.locatePoints = function(chunkIndex) {
 Map.prototype.createAndDraw = function() {
     this.map = []; // Limpiar el mapa anterior
     this.objectsInMap.forEach(ele => {
-        let [startX, y, width] = ele;
+        let [startX, y, width, type] = ele;
         let temp = new Rect(
             startX * size.tils,
             y * size.tils,
-            width * size.tils, // Usar el ancho calculado
-            1 * size.tils,
-            'solid'
+            width * size.tils,
+            1 * size.tils,  // Asegúrate de que la altura también está bien definida
+            type
         );
+
         this.map.push(temp);
     });
     return this.map;

@@ -5,9 +5,12 @@ body {
     padding: 0;
     box-sizing: border-box;
 }
+*{
+    position: absolute;
+}
 
 #game-world {
-    position: absolute; /* Esto asegura que el contenedor pueda moverse libremente */
+    position: relative; /* Esto asegura que el contenedor pueda moverse libremente */
     top: 0;
     left: 0;
     width: 100%; /* Asegúrate de que ocupe todo el ancho de la pantalla */
