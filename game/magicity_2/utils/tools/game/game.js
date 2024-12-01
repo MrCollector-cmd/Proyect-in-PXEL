@@ -55,51 +55,7 @@ function Game(player) {
         this.updateView();                // Actualiza la cámara
         requestAnimationFrame(gameLoop);  // Bucle del juego
     };
-    gameLoop();
-}
-collsObjects.checkCollision = function() {
-    for (let i = 0; i < this.map.length; i++) {
-        let obj = this.map[i];
-        if (obj.type === 'solid') {
-            // Aquí pasa el objeto 'Player' y no el rectángulo
-            const isColliding = this.pla.player.checkCollision(obj);
-
-            if (isColliding) {
-                // Aquí se resuelve la colisión pasando el objeto 'Player'
-                this.resolveCollision(this.pla, obj);  // Pasar 'this.pla' (el objeto Player)
-            }
-        }
-    }
-};
-
-collsObjects.resolveCollision = function(player, obj) {
-    // Comprobamos las colisiones usando el método checkCollision de Rect
-    const collisions = player.player.checkCollision(obj); // Usamos checkCollision del jugador (Rect)
-
-    if (collisions) {
-        // Si hay una colisión, ajustamos la posición del jugador dependiendo de la dirección de la colisión
-        collisions.forEach(collision => {
-            switch (collision) {
-                case 'left':
-                    player.x = obj.x - player.width; // Ajustamos la posición para evitar el solapamiento
-                    player.pCollLeft = true;
-                    break;
-                case 'right':
-                    player.x = obj.x + obj.width; // Ajustamos la posición para evitar el solapamiento
-                    player.pCollRight = true;
-                    break;
-                case 'top':
-                    player.y = obj.y - player.height; // Ajustamos la posición para evitar el solapamiento
-                    player.pCollTop = true;
-                    break;
-                case 'bottom':
-                    player.y = obj.y + obj.height; // Ajustamos la posición para evitar el solapamiento
-                    player.pCollButton = true;
-
-                    break;
-            }
-        });
-    }
+    gameLoop()
 };
 // function Game(player) {
 //     let downMap = new Map();

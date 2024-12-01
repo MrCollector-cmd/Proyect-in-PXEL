@@ -11,155 +11,111 @@ function Player(x, y) {
     this.pCollRight = false;  // Colisión con la derecha
     this.pCollLeft = false;   // Colisión con la izquierda
     this.mapObjects = [];     // Objetos con los que el jugador puede chocar
-    this.canJumpAgain = true;  // Bandera para controlar cuando el jugador puede saltar nuevamente
+    this.velocityY = 0;        // Velocidad vertical
+    this.canJump = true;       // Indica si puede saltar (debe soltar la tecla primero)
 }
+
 Player.prototype.move = function () {
     let div = document.getElementById(this.player.id);
     if (!div) {
         console.error("Element with the player's ID not found.");
         return;
-    }
+    }    
 
-    let xPos = this.player.x;
-    let yPos = this.player.y;
-    const speed = 10;
-    const jumpSpeed = 10;
-    const maxJumpHeight = 160;
-    const stepSize = 2;
-
-    let verticalMove = 0;
-    let horizontalMove = 0;
+    const speed = 10; // Velocidad de movimiento horizontal
+    const jumpForce = -20; // Fuerza del salto
+    const gravity = 1.5; // Aceleración de la gravedad
+    const maxFallSpeed = 15; // Velocidad máxima de caída
 
     // Manejar salto
-    if (controlls.up && this.pCollButton && !this.isJumping && this.canJumpAgain) {
-        this.isJumping = true;
-        this.jumpHeight = 0;
-        this.canJumpAgain = false
-        verticalMove = -jumpSpeed;
-    }
-
-    if (this.isJumping) {
-        if (this.jumpHeight < maxJumpHeight && !this.pCollTop) {
-            verticalMove = -jumpSpeed;
-            this.jumpHeight += jumpSpeed;
-        } else {
-            this.isJumping = false;
+    if (controlls.up) {
+        if (this.pCollButton && this.canJump) {
+            this.velocityY = jumpForce; // Aplicar fuerza de salto a la velocidad vertical
+            this.isJumping = true; // Activar el estado de salto
+            this.canJump = false; // Desactivar la capacidad de saltar
         }
+    } else {
+        // Solo permite saltar de nuevo cuando suelta la tecla
+        this.canJump = true;
     }
 
-    // Gravedad
-    if (!this.pCollButton && !this.isJumping) {
-        verticalMove += 10; // Incremento por gravedad
-    }
-
-    // Limitar velocidad terminal
-    const terminalVelocity = 20;
-    if (verticalMove > terminalVelocity) {
-        verticalMove = terminalVelocity;
+    // Aplicar gravedad
+    if (!this.pCollButton) {
+        this.velocityY += gravity; // Aplicar gravedad a la velocidad vertical
+        if (this.velocityY > maxFallSpeed) {
+            this.velocityY = maxFallSpeed; // Limitar la velocidad de caída
+        }
     }
 
     // Movimiento horizontal
-    if (controlls.left) {
-        horizontalMove -= speed;
-    }
-    if (controlls.right) {
-        horizontalMove += speed;
-    }
+    let moveX = 0;
+    if (controlls.left && !this.pCollLeft) moveX -= speed;   // Mueve hacia la izquierda si se presiona la tecla izquierda y no hay colisión con la izquierda
+    if (controlls.right && !this.pCollRight) moveX += speed; // Mueve hacia la derecha si se presiona la tecla derecha y no hay colisión con la derecha
 
-    console.log(verticalMove)
-// Movimiento vertical: subdividir en pasos más grandes
-let targetY = yPos + verticalMove;
+    // Aplicar movimiento horizontal
+    let newX = this.player.x + moveX;           // Actualiza la posición horizontal
+    let newY = this.player.y + this.velocityY;  // Actualiza la posición vertical
 
-while (Math.abs(targetY - yPos) > stepSize) {
-    let step = Math.sign(targetY - yPos) * Math.min(stepSize, Math.abs(targetY - yPos));
-    yPos += step;
-
-    // Detectar colisiones con objetos del mapa
-    for (let obj of this.mapObjects) {
-        if (obj.type === 'solid' && this.checkCollision(obj)) {
-            console.log(verticalMove)
-            console.log(verticalMove > 0)
-            if (verticalMove > 0) { // Colisión hacia abajo
-                yPos = obj.y - this.player.height; // Posicionar al jugador justo encima del rectángulo
-                this.pCollButton = true;
-                verticalMove = 0; // Detener el movimiento hacia abajo
+    // Verificar colisiones
+    let isOnGround = false;
+    for (let obj of this.mapObjects) {          // Itera sobre los objetos del mapa
+        if (obj.type === 'solid') {
+            // Verifica si hay colisión en Y
+            if (this.willCollide(this.player.x, newY, obj)) {
+                if (this.velocityY > 0) {   // Cayendo
+                    newY = obj.y - this.player.height;  // Actualiza la posición vertical para evitar caer dentro del objeto
+                    this.velocityY = 0;
+                    this.pCollButton = true;
+                    isOnGround = true;
+                    this.isJumping = false;
+                } else if (this.velocityY < 0) {    // Subiendo
+                    newY = obj.y + obj.height;      
+                    this.velocityY = 0;
+                    this.pCollTop = true;
+                }
             }
 
-            if (verticalMove < 0) { // Colisión hacia arriba
-                yPos = obj.y + this.player.height// Ajustar al borde inferior del objeto
-                this.pCollTop = true;
-                verticalMove = 0; // Detener el movimiento hacia arriba
+            // Verificar colisión en X
+            if (this.willCollide(newX, this.player.y, obj)) {
+                if (moveX > 0) {  
+                    newX = obj.x - this.player.width;
+                    this.pCollRight = true;
+                } else if (moveX < 0) {
+                    newX = obj.x + obj.width;
+                    this.pCollLeft = true;
+                }
             }
-            break;
-        }
-    }
-}
-// Movimiento horizontal
-    // Movimiento horizontal: subdividir en pasos pequeños
-    let targetX = xPos + horizontalMove;
-    while (Math.abs(targetX - xPos) > stepSize) {
-        let step = Math.sign(targetX - xPos) * Math.min(stepSize, Math.abs(targetX - xPos));
-        xPos += step;
-
-        // Verificar colisiones horizontales
-        if (this.pCollLeft && horizontalMove < 0) { // Colisión con la izquierda
-            xPos -= step;
-            break;
-        }
-        if (this.pCollRight && horizontalMove > 0) { // Colisión con la derecha
-            xPos -= step;
-            break;
         }
     }
 
-    if(!controlls.up && this.canJumpAgain !== !this.canJumpAgain){
-        this.canJumpAgain = true;
+    if (!isOnGround) { // Si no está en el suelo
+        this.pCollButton = false; // Desactiva la colisión con el suelo
     }
 
-    // Actualizar la posición en el DOM directamente
-    div.style.left = `${xPos}px`;
-    div.style.top = `${yPos}px`;
-    this.player.x = xPos;
-    this.player.y = yPos;
+    // Actualizar posición del jugador y del div
+    this.player.x = newX; 
+    this.player.y = newY; 
+    div.style.left = `${newX}px`; 
+    div.style.top = `${newY}px`; 
 };
 
-// Método de detección de colisiones
-Player.prototype.checkCollision = function (obj) {
+Player.prototype.willCollide = function(x, y, obj) {
     return (
-        this.player.x < obj.x + obj.width &&
-        this.player.x + this.player.width > obj.x &&
-        this.player.y < obj.y + obj.height &&
-        this.player.y + this.player.height > obj.y
+        x < obj.x + obj.width &&            // Verifica si el jugador está a la izquierda del objeto
+        x + this.player.width > obj.x &&    // Verifica si el jugador está a la derecha del objeto
+        y < obj.y + obj.height &&           // Verifica si el jugador está arriba del objeto
+        y + this.player.height > obj.y      // Verifica si el jugador está abajo del objeto
     );
 };
 
-// Método para calcular la distancia de solapamiento en Y
-Player.prototype.calculateOverlapY = function (obj) {
-    if (this.player.y + this.player.height > obj.y && this.player.y < obj.y) {
-        return this.player.y + this.player.height - obj.y; // Solapamiento inferior
-    }
-    if (this.player.y < obj.y + obj.height && this.player.y + this.player.height > obj.y + obj.height) {
-        return obj.y + obj.height - this.player.y; // Solapamiento superior
-    }
-    return 0;
+// Comprueba si hay colisión
+Player.prototype.checkCollision = function (obj) {
+    return this.willCollide(this.player.x, this.player.y, obj);
 };
 
-// Método para calcular la distancia de solapamiento en X
-Player.prototype.calculateOverlapX = function (obj) {
-    if (this.player.x + this.player.width > obj.x && this.player.x < obj.x) {
-        return this.player.x + this.player.width - obj.x; // Solapamiento izquierdo
-    }
-    if (this.player.x < obj.x + obj.width && this.player.x + this.player.width > obj.x + obj.width) {
-        return obj.x + obj.width - this.player.x; // Solapamiento derecho
-    }
-    return 0;
-};
-
-// Método de actualización de colisiones
+// Reinicia las colisiones
 Player.prototype.refreshColl = function() {
-    // Reiniciar las colisiones
-    this.pCollButton = false;
-    this.pCollTop = false;
+    this.pCollTop = false; 
     this.pCollLeft = false;
     this.pCollRight = false;
 };
