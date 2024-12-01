@@ -3,17 +3,14 @@ Ocultar las barras de desplazamiento */
 body {
     margin: 0;
     padding: 0;
-}
-*{
-    position: relative;
+    overflow: hidden;
 }
 
 #game-world {
     position: relative; /* Esto asegura que el contenedor pueda moverse libremente */
-    top: 0;
-    left: 0;
-    width: 100%; /* Asegúrate de que ocupe todo el ancho de la pantalla */
-    height: 100%; /* Y toda la altura de la pantalla */
+    
+    width: 100vw; /* Asegúrate de que ocupe todo el ancho de la pantalla */
+    height: 100vh; /* Y toda la altura de la pantalla */
 
     will-change: transform; /* Optimización para cambios en la propiedad transform */
 }

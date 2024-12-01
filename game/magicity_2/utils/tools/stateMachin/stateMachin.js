@@ -26,12 +26,14 @@ let stateMachine = {
     },
     refresh:function(regTemp){ 
         if(stateMachine.stateAct[1] === 3){
-         p.move()
-    
+         stateMachine.stateAct[0].refreshState();
+         stateMachine.draw(regTemp)
         }
     },
-    draw: function(){
-        stateMachine.stateAct.draw()
+    draw: function(regTemp){
+        if(stateMachine.stateAct[1] === 3){
+            stateMachine.stateAct[0].drawGame();
+           }
     }
 }
 export {stateMachine}

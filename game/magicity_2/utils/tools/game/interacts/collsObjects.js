@@ -11,7 +11,6 @@ const collsObjects = {
             if (obj.type === 'solid') {
                 // Aquí pasa el objeto 'Player' y no el rectángulo
                 const isColliding = this.pla.player.checkCollision(obj);
-    
                 if (isColliding) {
                     // Aquí se resuelve la colisión pasando el objeto 'Player'
                     this.resolveCollision(this.pla, obj);  // Pasar 'this.pla' (el objeto Player)

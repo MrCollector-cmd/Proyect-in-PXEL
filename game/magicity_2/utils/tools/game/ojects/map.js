@@ -1,6 +1,7 @@
 import { platforms } from "../patrons/patronsPlatforms.js";
 import { Rect } from "../../rect.js";
 import { size } from "../../size.js";
+
 function Map() {
     this.height = size.getTilesHeight();
     this.chunkSize = 10; // Tamaño de cada chunk en tiles
@@ -9,6 +10,7 @@ function Map() {
     this.objectsInMap = [];
     this.map = [];
 }
+
 // Método para obtener un patrón aleatorio de la lista de patrones
 Map.prototype.getRandomPatron = function() {
     const keys = Object.keys(this.patrons); // Obtener las claves de los patrones
@@ -77,14 +79,42 @@ Map.prototype.createAndDraw = function() {
     });
     return this.map;
 };
+Map.prototype.removeChunk = function (playerX) {
+    // Define un margen alrededor del jugador para mantener visibles ciertos chunks
+    const margin = 5; // En tiles
+    const visibleStart = Math.floor((playerX / size.tils) - margin);
+    const visibleEnd = Math.floor((playerX / size.tils) + margin);
 
-// Método para avanzar al siguiente chunk y dibujar en el espacio siguiente
-Map.prototype.advanceChunk = function() {
-    this.currentChunkIndex++; // Avanzar al siguiente chunk
-    this.locatePoints(this.currentChunkIndex); // Localizar puntos del nuevo chunk
-    return this.createAndDraw(); // Crear y dibujar el nuevo chunk
+    // Filtra los chunks que están fuera del rango visible
+    this.objectsInMap = this.objectsInMap.filter(obj => {
+        const objEndX = obj[0] + obj[2]; // Posición final del rectángulo
+        return objEndX >= visibleStart && obj[0] <= visibleEnd; // ¿Está en el rango visible?
+    });
+
+    // Actualiza el DOM: elimina solo los rectángulos que no están en objectsInMap
+    const allRects = Array.from(document.querySelectorAll(".rect")); // Selecciona todos los rectángulos
+    allRects.forEach(rect => {
+        const rectX = parseInt(rect.style.left) / size.tils; // Calcula la posición X del rect
+        const isVisible = this.objectsInMap.some(obj => rectX >= obj[0] && rectX < obj[0] + obj[2]);
+        if (!isVisible) rect.remove(); // Elimina solo los rectángulos no visibles
+    });
 };
 
+Map.prototype.advanceChunk = function () {
+    this.currentChunkIndex++; // Incrementa el índice del chunk
+    console.log("Avanzando al chunk:", this.currentChunkIndex);
+
+    // Genera el nuevo chunk
+    this.locatePoints(this.currentChunkIndex);
+
+    // Crea y dibuja el nuevo chunk
+    const newChunk = this.createAndDraw();
+
+    // Verifica los objetos generados
+    console.log("Nuevos objetos generados:", newChunk.length);
+
+    return newChunk;
+};
 // Inicializar el mapa y crear el primer chunk
 Map.prototype.initialize = function() {
     this.locatePoints(this.currentChunkIndex);
