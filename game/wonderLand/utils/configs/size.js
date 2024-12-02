@@ -1,11 +1,11 @@
 let size = {
-    width: (window.innerWidth || document.body.clientWidth) / 2, // Dividido por 2 para la mitad de la pantalla
+    width: (window.innerWidth || document.body.clientWidth) ,
     height: window.innerHeight || document.body.clientHeight,
     tils: 60,
     scale: 1,
     initSize: function() {  
         window.addEventListener('resize', function() {
-            size.width = window.innerWidth / 2; // Actualizar width a la mitad del ancho de la ventana
+            size.width = window.innerWidth; // Actualizar width a la mitad del ancho de la ventana
             size.height = window.innerHeight;
         });
     },

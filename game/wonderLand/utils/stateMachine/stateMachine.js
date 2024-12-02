@@ -1,7 +1,7 @@
-import { Game } from "../game/game.js";
-import { states } from "./states.js";
-import { Player } from "../game/ojects/player.js";
-let p = new Player(2,2);
+import { Game } from "../game/objects/game.js";
+import { states } from "../configs/states.js";
+// import { Player } from "../game/ojects/player.js";
+// let p = new Player(2,2);
 let stateMachine = {
     stateAct: [],
     ini: function(e){
@@ -16,7 +16,7 @@ let stateMachine = {
             case states.MENU_SUB:
                 break;
             case states.GAME_ON:
-                    stateMachine.stateAct = [new Game(p),3];
+                    stateMachine.stateAct = [new Game(),3];
                 break;
             case states.GAME_PAUSE:
                 break;
@@ -26,14 +26,10 @@ let stateMachine = {
     },
     refresh:function(regTemp){ 
         if(stateMachine.stateAct[1] === 3){
-         stateMachine.stateAct[0].refreshState();
-         stateMachine.draw(regTemp)
+            stateMachine.stateAct[0].start();
         }
     },
     draw: function(regTemp){
-        if(stateMachine.stateAct[1] === 3){
-            stateMachine.stateAct[0].drawGame();
-           }
     }
 }
 export {stateMachine}

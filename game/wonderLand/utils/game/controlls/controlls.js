@@ -1,5 +1,5 @@
-import { keyboard } from "../../keyboard.js"
-import { controllsKey } from "./controllsKeys.js"
+import { keyboard } from "../../configs/keyboard.js";
+import { controllsKey } from "../../configs/controllsKeys.js";
 
 let controlls = {
     pushUp:false,
