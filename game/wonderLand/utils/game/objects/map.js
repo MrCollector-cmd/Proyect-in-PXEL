@@ -1,11 +1,12 @@
-import { Entity } from "../../configs/rect.js";
+import { Entity } from "./rect.js";
 import { size } from "../../configs/size.js";
 import { platforms } from "../../configs/patrons/patronsPlatforms.js";
 
-function Map() {
+function Map(m) {
     this.height = size.getTilesHeight();
     this.chunkSize = 10; // Tamaño de cada chunk en tiles
     this.currentChunkIndex = 0;
+    this.maxChunks = m
     this.patrons = platforms; // Conjunto de patrones disponibles
     this.map = []; // Entidades actualmente en el mapa
 }
@@ -24,15 +25,41 @@ Map.prototype.locatePoints = function (chunkIndex) {
     const objects = [];
 
     pattern.forEach((row, y) => {
+        let startX = null; // Marca el inicio de un bloque consecutivo
+        let currentWidth = 0; // Acumula el ancho del bloque
+
         row.forEach((cell, x) => {
             if (cell === 1) {
-                const rectX = x * size.tils + offsetX;
+                if (startX === null) {
+                    // Inicia un nuevo bloque
+                    startX = x;
+                    currentWidth = 1;
+                } else {
+                    // Continúa el bloque actual
+                    currentWidth++;
+                }
+            } else if (startX !== null) {
+                // Fin del bloque actual, agregarlo a objetos
+                const rectX = startX * size.tils + offsetX;
                 const rectY = y * size.tils;
-                const width = size.tils;
+                const width = currentWidth * size.tils;
                 const height = size.tils;
+
                 objects.push({ x: rectX, y: rectY, width, height, type: "solid" });
+                startX = null;
+                currentWidth = 0;
             }
         });
+
+        // Agregar el último bloque de la fila, si existe
+        if (startX !== null) {
+            const rectX = startX * size.tils + offsetX;
+            const rectY = y * size.tils;
+            const width = currentWidth * size.tils;
+            const height = size.tils;
+
+            objects.push({ x: rectX, y: rectY, width, height, type: "solid" });
+        }
     });
 
     return objects;
@@ -46,7 +73,7 @@ Map.prototype.createAndDraw = function (objects) {
             obj.y,
             obj.width,
             obj.height,
-            '../../../src/terrain/ParedTierra.png', // Imagen de ejemplo
+            'src/terrain/terrainPlatform.png', // Imagen de ejemplo
             obj.type
         );
         this.map.push(entity); // Agrega la entidad al mapa
@@ -67,6 +94,21 @@ Map.prototype.advanceChunk = function () {
     const newEntities = this.createAndDraw(objects);
 
     return newEntities; // Devuelve las nuevas entidades creadas
+};
+Map.prototype.updateMapBasedOnMouse = function (mouseWorldX, mouseWorldY) {
+    const chunkWidth = this.chunkSize * size.tils; // Ancho de un chunk en píxeles
+    const chunkHeight = this.height * size.tils;  // Altura de un chunk en píxeles
+
+    // Calcula el índice del chunk donde está el mouse
+    const chunkIndexX = Math.floor(mouseWorldX / chunkWidth);
+    const chunkIndexY = Math.floor(mouseWorldY / chunkHeight);
+
+    // Si el mouse está en un nuevo chunk, genera ese chunk
+    if (chunkIndexX > this.currentChunkIndex && this.maxChunks) {
+        this.currentChunkIndex = chunkIndexX; // Actualiza el índice actual
+        const objects = this.locatePoints(this.currentChunkIndex); // Genera datos del chunk
+        this.createAndDraw(objects); // Crea y dibuja el chunk
+    }
 };
 // Inicializa el primer chunk
 Map.prototype.initialize = function () {

@@ -10,7 +10,6 @@ let start={
         keyboard.ini();
         mainLoop.iterator();
         stateMachine.ini(3);
-        
     }
 }
 

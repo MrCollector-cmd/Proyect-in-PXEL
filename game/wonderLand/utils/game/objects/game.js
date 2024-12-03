@@ -1,101 +1,113 @@
-import { Rect,Being,Entity } from "../../configs/rect.js";
+import { Criature } from "./rect.js";
 import { size } from "../../configs/size.js";
 import { mainLoop } from "../../mainLoop.js/mainLoop.js";
-import { move } from "../controlls/move/movePlayer.js";
 import { Map } from "./map.js";
 class Game {
     constructor() {
         // Crear el canvas
         this.canvas = document.getElementById('gameWorld');
-
-        // Ajustar el tamaño inicial del canvas según el objeto size
         this.updateCanvasSize();
-
         this.canvas.style.border = '1px solid black';
         document.body.appendChild(this.canvas);
 
-        this.context = this.canvas.getContext('2d'); // Contexto del canvas
-        let img = new Image();
-        img.src = '../../src/skins/Character1_1.png';
-        this.player = null; // Almacena el personaje principal
-        this.map = new Map();
-        this.maxChunks = 1; // Limitar la cantidad de chunks
-        this.loadPlayer(20, 20, 50, 50,img.src,'player',{heal:10,damage:10})
-        // Escuchar cambios en el tamaño de la ventana para ajustar el canvas
+        this.context = this.canvas.getContext('2d');
+        this.mouseX = 0;
+        this.mouseY = 0;
+        this.player = null;
+
+        this.map = new Map(5); // Configurar un número inicial de chunks
+
+        this.cameraOffsetX = 0; // Desplazamiento de la cámara en X
+        this.cameraOffsetY = 0; // Desplazamiento de la cámara en Y
+
+        this.centralArea = {
+            width: this.canvas.width / 3, // 1/3 del ancho del canvas
+            height: this.canvas.height / 3, // 1/3 de la altura del canvas
+        };
+
+        this.loadPlayer(20, 20, 50, 60, "src/skins/skinD.png", "player", { heal: 10, damage: 10 });
+        this.setupMouseListeners();
     }
-    // Actualizar las dimensiones del canvas según size
+
+    setupMouseListeners() {
+        this.canvas.addEventListener('mousemove', (event) => {
+            const rect = this.canvas.getBoundingClientRect();
+            this.mouseX = event.clientX - rect.left;
+            this.mouseY = event.clientY - rect.top;
+        });
+    }
+
     updateCanvasSize() {
         this.canvas.width = size.width;
         this.canvas.height = size.height;
     }
 
-    // Cargar un personaje
     loadPlayer(x, y, width, height, imgPath, type, stats) {
-        this.player = new Being(x, y, width, height, imgPath, type, stats);
-        console.log(this.player);
+        this.player = new Criature(x, y, width, height, imgPath, type, stats);
     }
 
-
-    // Método para iniciar el juego
     start() {
         if (!this.player) {
             console.error("No se ha cargado un jugador.");
             return;
         }
-    
-        // Solo se llama una vez al iniciar el juego
-        if (this.map.map.length === 0) {
-            const mapEntities = this.map.initialize(); 
-            this.player.mapObjects = mapEntities; // Asigna las entidades iniciales al jugador
-        }
-        
-    
-        this.drawLoop(); // Inicia el bucle de dibujo
-    }
-     // Dibuja los objetos del mapa
-     drawMap() {
-        // Filtrar entidades fuera de la vista
-        const visibleEntities = this.map.map.filter(entity => {
-            return (
-                entity.x + entity.width >= this.player.x - this.canvas.width / 2 &&
-                entity.x <= this.player.x + this.canvas.width / 2 &&
-                entity.y + entity.height >= this.player.y - this.canvas.height / 2 &&
-                entity.y <= this.player.y + this.canvas.height / 2
-            );
-        });
-        
-        // Dibuja solo las entidades visibles
-        visibleEntities.forEach(entity => {
-            entity.draw(this.context);
-        });
-    }
-     // Dibujo del juego
-     draw() {
-        this.clearCanvas();
-        this.drawMap();
 
-        
-        this.player.draw(this.context);
-        move(this.player);
-    
+        if (this.map.map.length === 0) {
+            const mapEntities = this.map.initialize();
+            this.player.mapObjects = mapEntities;
+        }
+
+        this.drawLoop();
+    }
+
+    updateCamera() {
+        // Define el centro del área central
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        // Bordes del área central
+        const leftBoundary = centerX - this.centralArea.width / 2;
+        const rightBoundary = centerX + this.centralArea.width / 2;
+        const topBoundary = centerY - this.centralArea.height / 2;
+        const bottomBoundary = centerY + this.centralArea.height / 2;
+
+        // Ajustar desplazamiento de la cámara si el mouse está fuera del área central
+        if (this.mouseX < leftBoundary) {
+            this.cameraOffsetX -= (leftBoundary - this.mouseX);
+        } else if (this.mouseX > rightBoundary) {
+            this.cameraOffsetX += (this.mouseX - rightBoundary);
+        }
+
+        if (this.mouseY < topBoundary) {
+            this.cameraOffsetY -= (topBoundary - this.mouseY);
+        } else if (this.mouseY > bottomBoundary) {
+            this.cameraOffsetY += (this.mouseY - bottomBoundary);
+        }
+    }
+
+    drawMap() {
+        this.map.map.forEach(entity => {
+            // Dibujar teniendo en cuenta el desplazamiento de la cámara
+            entity.draw(this.context, this.cameraOffsetX, this.cameraOffsetY);
+        });
+    }
+
+    draw() {
+        this.clearCanvas();
+        this.updateCamera(); // Actualizar la posición de la cámara
+        this.drawMap();
+        this.player.draw(this.context, this.cameraOffsetX, this.cameraOffsetY); // Dibujar el jugador con desplazamiento
+        this.player.move()
         // FPS y APS en pantalla
         this.context.fillStyle = 'black';
         this.context.fillText(`FPS: ${mainLoop.fps}`, 10, 20);
         this.context.fillText(`APS: ${mainLoop.aps}`, 10, 40);
     }
+
     drawLoop() {
         this.clearCanvas();
         this.draw();
-        // Evitar cualquier referencia innecesaria al mapa
-        // Por ejemplo, asegurarte de que advanceChunk solo se llame bajo ciertas condiciones
-        if (this.player.x > this.canvas.width / 2) {
-            const newChunks = this.map.advanceChunk();
-            if (newChunks.length > 0) {
-                this.player.mapObjects.push(...newChunks);
-            }
-        }
     }
-    // Limpiar el canvas
+
     clearCanvas() {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
