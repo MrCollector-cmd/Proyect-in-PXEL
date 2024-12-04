@@ -48,13 +48,14 @@ class Entity extends Rect {
         this.img = new Image();
         this.img.src = img;
     }
-    draw(context) {
+    draw(context,offsetX, offsetY) {
         if (this.img.complete && this.img.width !== 0) {
-            
+            this.x = this.x - offsetX
+            this.y = this.y - offsetY
         // Dibujar la imagen repetida en tiles
         const tilesX = Math.ceil(this.width / size.tils); // Cantidad de tiles en X
         const tilesY = Math.ceil(this.height / size.tils); // Cantidad de tiles en Y
-    
+            
         for (let i = 0; i < tilesX; i++) {
             for (let j = 0; j < tilesY; j++) {
                 context.drawImage(
@@ -89,7 +90,7 @@ class Criature extends Entity {
     move(){
         this.refreshColl()
         const speed = 10; // Velocidad de movimiento horizontal
-        const jumpForce = -20; // Fuerza del salto
+        const jumpForce = -25; // Fuerza del salto
         const gravity = 1.5; // Aceleración de la gravedad
         const maxFallSpeed = 15; // Velocidad máxima de caída
         // Manejar salto
@@ -176,9 +177,9 @@ class Criature extends Entity {
         this.pCollLeft = false;
         this.pCollRight = false;
     };
-    draw(context) {
+    draw(context,offsetX,offsetY) {
         // Dibuja la imagen del personaje
-        super.draw(context);
+        super.draw(context,offsetX,offsetY);
 
         // Opcional: Dibuja las estadísticas sobre el personaje
         context.fillStyle = 'red';
