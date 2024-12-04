@@ -6,11 +6,23 @@
 body{
     overflow: hidden;
     scroll-behavior: inherit;
+    cursor: none;
     
 }
-canvas{
+#gameWorld{
+    position: relative;
     background-image: url('../src/terrain/background/Background1.png');
     background-size: cover;
     background-repeat: no-repeat;
+    z-index: 2 !important;
+}
+
+.cursor{
+    position: absolute;
+    top: 50%;
+    height: 10px;
+    width: 10px;
+    color: black;
+    z-index: 1 !important;
 }
 

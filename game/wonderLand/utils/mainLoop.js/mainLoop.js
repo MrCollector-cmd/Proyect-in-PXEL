@@ -1,4 +1,5 @@
 import { controlls } from "../game/controlls/controlls.js";
+import { mouseControlls } from "../game/controlls/mouse.js";
 import { stateMachine } from "../stateMachine/stateMachine.js";
 
 let mainLoop = {
@@ -48,7 +49,7 @@ let mainLoop = {
         controlls.restart();
     },
     draw: function (timestamp) {
-        // Aquí irían las operaciones de renderizado, si aplica
+        mouseControlls.refreshMouseStyle();
     }
 };
 

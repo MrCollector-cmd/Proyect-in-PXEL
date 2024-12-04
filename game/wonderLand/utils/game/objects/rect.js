@@ -154,7 +154,7 @@ class Criature extends Entity {
                 }
             }
         }
-    
+        
         if (!isOnGround) { // Si no está en el suelo
             this.pCollButton = false; // Desactiva la colisión con el suelo
         }
