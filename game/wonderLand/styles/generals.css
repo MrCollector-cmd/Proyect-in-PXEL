@@ -9,8 +9,8 @@ body{
     
 }
 canvas{
-    background-image: url('../src/niankat.jpg');
-    background-position-y: -100px;
+    background-image: url('../src/terrain/background/Background1.png');
+    background-size: cover;
     background-repeat: no-repeat;
 }
 

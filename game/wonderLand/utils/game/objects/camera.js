@@ -4,7 +4,7 @@ class Camera {
         this.height = height;  // Alto de la cámara
         this.x = x;  // Coordenada X del centro de la cámara
         this.y = y;  // Coordenada Y del centro de la cámara
-        this.smoothFactor = 0.6;  // Control de suavizado
+        this.smoothFactor = 1;  // Control de suavizado
     }
 
     follow(player, mapWidth, mapHeight) {
