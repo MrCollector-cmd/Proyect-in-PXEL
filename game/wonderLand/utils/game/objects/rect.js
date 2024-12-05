@@ -42,31 +42,43 @@ class Rect {
     };
 }
 class Entity extends Rect {
-    constructor(x, y, width, height, img, type) {
-        super(x, y, width, height);
+    constructor(x, y, width, height, img, type, repeatTexture) {
+        super(x, y, width, height, );
         this.type = type;
+        this.repeatTexture = repeatTexture;
         this.img = new Image();
         this.img.src = img;
     }
-    draw(context,offsetX, offsetY) {
+    draw(context, offsetX, offsetY) {
         if (this.img.complete && this.img.width !== 0) {
-            this.x = this.x - offsetX
-            this.y = this.y - offsetY
-        // Dibujar la imagen repetida en tiles
-        const tilesX = Math.ceil(this.width / size.tils); // Cantidad de tiles en X
-        const tilesY = Math.ceil(this.height / size.tils); // Cantidad de tiles en Y
-            
-        for (let i = 0; i < tilesX; i++) {
-            for (let j = 0; j < tilesY; j++) {
+            const adjustedX = this.x - offsetX;
+            const adjustedY = this.y - offsetY;
+    
+            if (this.repeatTexture) {
+                // Dibujar la imagen repetida en tiles
+                const tilesX = Math.ceil(this.width / size.tils); // Cantidad de tiles en X
+                const tilesY = Math.ceil(this.height / size.tils); // Cantidad de tiles en Y
+                
+                for (let i = 0; i < tilesX; i++) {
+                    for (let j = 0; j < tilesY; j++) {
+                        context.drawImage(
+                            this.img,
+                            adjustedX + i * size.tils, // Posición X del tile
+                            adjustedY + j * size.tils, // Posición Y del tile
+                            size.tils,                 // Ancho del tile
+                            size.tils                  // Alto del tile
+                        );
+                    }
+                }
+            } else {
+                // Dibujar la imagen ajustada al tamaño del objeto (sin repetir)
                 context.drawImage(
                     this.img,
-                    this.x + i * size.tils, // Posición X del tile
-                    this.y + j * size.tils, // Posición Y del tile
-                    size.tils,              // Ancho del tile
-                    size.tils               // Alto del tile
+                    0, 0, this.img.width, this.img.height, // Fuente: toda la imagen
+                    adjustedX, adjustedY,                 // Posición destino
+                    this.width, this.height               // Tamaño destino
                 );
             }
-        }
         } else {
             console.warn(`Imagen aún no cargada: ${this.img.src}`);
         }
@@ -180,11 +192,6 @@ class Criature extends Entity {
     draw(context,offsetX,offsetY) {
         // Dibuja la imagen del personaje
         super.draw(context,offsetX,offsetY);
-
-        // Opcional: Dibuja las estadísticas sobre el personaje
-        context.fillStyle = 'red';
-        context.font = '14px Arial';
-        context.fillText(`HP: ${this.stats.heal}`, this.x, this.y - 10);
     }
 }
 

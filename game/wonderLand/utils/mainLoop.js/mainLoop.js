@@ -3,6 +3,7 @@ import { mouseControlls } from "../game/controlls/mouse.js";
 import { stateMachine } from "../stateMachine/stateMachine.js";
 
 let mainLoop = {
+    posMouse: null,
     idEjecute: null,
     lastFrameTime: 0, // Marca de tiempo del último frame
     apsTarget: 60, // Actualizaciones por segundo objetivo
@@ -50,6 +51,8 @@ let mainLoop = {
     },
     draw: function (timestamp) {
         mouseControlls.refreshMouseStyle();
+        mainLoop.posMouse = mouseControlls.getPosMouse();
+        mainLoop.posMouse.mouseOut = mouseControlls.mouseOut;
     }
 };
 

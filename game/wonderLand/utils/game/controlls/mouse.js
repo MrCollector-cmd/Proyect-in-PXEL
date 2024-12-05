@@ -6,21 +6,25 @@ let mouseControlls = {
     offsetX: null,
     offsetY: null,
     getPosMouse:function() {
-        if (mouseControlls.offsetX === null || mouseControlls.offsetY === null && mouseControlls.mouseOut) {
+        if (mouseControlls.offsetX === null || mouseControlls.offsetY === null && !mouseControlls.mouseOut) {
             addEventListener('mousemove', (e) => {
                 mouseControlls.width = 60
                 mouseControlls.height = 60
                 mouseControlls.offsetX = e.clientX; 
                 mouseControlls.offsetY = e.clientY; 
+                mouseControlls.mouseOut = true;
             });
         }
-        else if(!mouseControlls.mouseOut){
+        else{
             addEventListener('mouseout', () => {
                 mouseControlls.width = 0
                 mouseControlls.height = 0
+                mouseControlls.mouseOut = false
             })
         }
+        return {posX:mouseControlls.offsetX,posY:mouseControlls.offsetY, mouseOut:mouseControlls.mouseOut}
     },
+
     styleMouse:function(context) {
         mouseControlls.img.src = "src/pointer/pointer1.png";
         if (mouseControlls.img.complete && mouseControlls.img.width !== 0) {

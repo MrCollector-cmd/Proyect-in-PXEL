@@ -14,10 +14,11 @@ class Game {
         this.context = this.canvas.getContext('2d');
 
         // Propiedades relacionadas con el mapa
-        this.map = new Map(5); // Inicializamos el mapa
+        this.chunksAll = 5;
+        this.map = new Map(this.chunksAll); // Inicializamos el mapa
         this.mapSets = {
             height: size.height,
-            width: (size.tils * 10)*5// saca el tamanio de cada chunk y lo multiplica por la cantidad de chunks
+            width: (size.tils * 10)*this.chunksAll// saca el tamanio de cada chunk y lo multiplica por la cantidad de chunks
         };
 
         // Cargar al jugador
@@ -29,8 +30,8 @@ class Game {
         const cameraHeight = this.canvas.height - 100;
         this.camera = new Camera(cameraWidth, cameraHeight, cameraWidth / 2, cameraHeight / 2);
     }
-    updateCamera() {
-        this.camera.follow(this.player,this.mapSets.width,this.mapSets.height); // Actualiza la posición de la cámara basándose en el jugador
+    updateCamera(posMouse) {
+        this.camera.follow(this.player, posMouse, this.canvas); // Actualiza la posición de la cámara basándose en el jugador
     }
     updateCanvasSize() {
         this.canvas.width = window.innerWidth;
@@ -67,10 +68,12 @@ class Game {
     }
 
     draw() {
+        // Limpia el lienzo
         this.clearCanvas();
+        // Obtiene la posicion del mouse
+        let posMouse = mainLoop.posMouse;
         // Actualizar la cámara para que siga al jugador
-        this.updateCamera()
-
+        this.updateCamera(posMouse)
         // Dibujar mapa y jugador
         this.drawMap();
         const { offsetX, offsetY } = this.camera.getOffset();
@@ -78,6 +81,13 @@ class Game {
 
         // Mover al jugador
         this.player.move();
+
+
+        // Dibujar una capa negra con opacidad
+        this.context.globalAlpha = 0.3;  // Ajusta la opacidad (0.0 completamente transparente, 1.0 completamente opaco)
+        this.context.fillStyle = 'black'; // Establecer el color de la capa (negro)
+        this.context.fillRect(0, 0, this.canvas.width, this.canvas.height); // Dibuja el rectángulo que cubre todo el canvas
+        this.context.globalAlpha = 1.0;  // Restaurar la opacidad a su valor predeterminado (opcional)
 
         // Mostrar FPS y APS
         this.context.fillStyle = 'black';

@@ -38,6 +38,22 @@ Map.prototype.locatePoints = function (chunkIndex) {
                     // Continúa el bloque actual
                     currentWidth++;
                 }
+            } else if (cell === 2) {
+                // Crear una entidad específica para `2`
+                const rectX = x * size.tils + offsetX ;
+                const rectY = y * size.tils - size.tils * 3;
+                const width = 3*size.tils;
+                const height = 4 * size.tils; // Altura específica de 3 tiles
+
+                objects.push({
+                    x: rectX ,
+                    y: rectY,
+                    width,
+                    height,
+                    type: "notColl", // Tipo específico
+                    texture: 'src/obstacle/tree.png', // Textura específica para objetos altos
+                    repeatTexture: false // Indicador para evitar repetición de textura
+                });
             } else if (startX !== null) {
                 // Fin del bloque actual, agregarlo a objetos
                 const rectX = startX * size.tils + offsetX;
@@ -45,7 +61,15 @@ Map.prototype.locatePoints = function (chunkIndex) {
                 const width = currentWidth * size.tils;
                 const height = size.tils;
 
-                objects.push({ x: rectX, y: rectY, width, height, type: "solid" });
+                objects.push({
+                    x: rectX,
+                    y: rectY,
+                    width,
+                    height,
+                    type: "solid", // Tipo para bloques consecutivos de `1`
+                    texture: 'src/terrain/terrainPlatform.png', // Textura para `1`,
+                    repeatTexture: true
+                });
                 startX = null;
                 currentWidth = 0;
             }
@@ -58,30 +82,41 @@ Map.prototype.locatePoints = function (chunkIndex) {
             const width = currentWidth * size.tils;
             const height = size.tils;
 
-            objects.push({ x: rectX, y: rectY, width, height, type: "solid" });
+            objects.push({
+                x: rectX,
+                y: rectY,
+                width,
+                height,
+                type: "solid",
+                texture: 'src/terrain/terrainPlatform.png', // Textura para `1`
+                repeatTexture: true
+            });
         }
     });
 
     return objects;
 };
 
+
 // Crea entidades basadas en los datos de posición y las devuelve
 Map.prototype.createAndDraw = function (objects) {
     const entities = objects.map(obj => {
         const entity = new Entity(
-            obj.x,
+            obj.x ,
             obj.y,
             obj.width,
             obj.height,
-            'src/terrain/terrainPlatform.png', // Imagen de ejemplo
-            obj.type
+            obj.texture, // Textura específica del objeto
+            obj.type,
+            obj.repeatTexture
         );
-        this.map.push(entity); // Agrega la entidad al mapa
+
+        // Agregar la entidad al mapa
+        this.map.push(entity);
         return entity;
     });
     return entities; // Devuelve las nuevas entidades creadas
 };
-
 // Avanza al siguiente chunk
 Map.prototype.advanceChunk = function () {
     if (this.currentChunkIndex >= this.maxChunks - 1) {
