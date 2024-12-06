@@ -48,6 +48,7 @@ class Entity extends Rect {
         this.repeatTexture = repeatTexture;
         this.img = new Image();
         this.img.src = img;
+        this.direction = null;
     }
     draw(context, offsetX, offsetY) {
         if (this.img.complete && this.img.width !== 0) {
@@ -70,17 +71,43 @@ class Entity extends Rect {
                         );
                     }
                 }
-            } else {
-                // Dibujar la imagen ajustada al tamaño del objeto (sin repetir)
-                context.drawImage(
+            }
+            else {
+                if (this.direction !== null) {
+                    // Dibuja la imagen según la dirección
+                    context.save(); // Guarda el estado del contexto
+                
+                    if (this.direction) {
+                        // Reflejar horizontalmente
+                        context.translate(adjustedX + this.width, adjustedY); // Ajusta la posición destino
+                        context.scale(-1, 1); // Escala horizontalmente
+                    } else {
+                        // Dirección 'right' o por defecto: sin reflejo
+                        context.translate(adjustedX, adjustedY);
+                    }
+                
+                    // Dibujar la imagen
+                    context.drawImage(
+                        this.img,
+                        0, 0, this.img.width, this.img.height, // Fuente: toda la imagen
+                        0, 0, this.width, this.height          // Dibuja en el destino con el tamaño ajustado
+                    );
+                
+                    context.restore(); // Restaura el contexto
+                }else{
+                    // Dibujar la imagen ajustada al tamaño del objeto (sin repetir)
+                    context.drawImage(
                     this.img,
                     0, 0, this.img.width, this.img.height, // Fuente: toda la imagen
                     adjustedX, adjustedY,                 // Posición destino
                     this.width, this.height               // Tamaño destino
                 );
+                }
+                
             }
+            
         } else {
-            console.warn(`Imagen aún no cargada: ${this.img.src}`);
+            
         }
     }
 }
@@ -98,13 +125,14 @@ class Criature extends Entity {
         this.mapObjects = [];     // Objetos con los que el jugador puede chocar
         this.velocityY = 0;        // Velocidad vertical
         this.canJump = true;       // Indica si puede saltar (debe soltar la tecla primero)
+        this.direction = false;
     }
     move(){
         this.refreshColl()
-        const speed = 10; // Velocidad de movimiento horizontal
+        const speed = 12; // Velocidad de movimiento horizontal
         const jumpForce = -25; // Fuerza del salto
-        const gravity = 1.5; // Aceleración de la gravedad
-        const maxFallSpeed = 15; // Velocidad máxima de caída
+        const gravity = 1.7; // Aceleración de la gravedad
+        const maxFallSpeed = 20; // Velocidad máxima de caída
         // Manejar salto
         if (controlls.up) {
             if (this.pCollButton && this.canJump) {
@@ -126,9 +154,17 @@ class Criature extends Entity {
         }
         // Movimiento horizontal
         let moveX = 0;
-        if (controlls.left && !this.pCollLeft) moveX -= speed;   // Mueve hacia la izquierda si se presiona la tecla izquierda y no hay colisión con la izquierda
-        if (controlls.right && !this.pCollRight) moveX += speed; // Mueve hacia la derecha si se presiona la tecla derecha y no hay colisión con la derecha
-    
+        if (controlls.left && !this.pCollLeft){
+             moveX -= speed;
+        }   // Mueve hacia la izquierda si se presiona la tecla izquierda y no hay colisión con la izquierda
+        if (controlls.right && !this.pCollRight){
+             moveX += speed;
+            } // Mueve hacia la derecha si se presiona la tecla derecha y no hay colisión con la derecha
+        if(controlls.right){
+            this.direction = false;
+        }else if(controlls.left){
+            this.direction = true;
+        }
         // Aplicar movimiento horizontal
         let newX = this.x + moveX;           // Actualiza la posición horizontal
         let newY = this.y + this.velocityY;  // Actualiza la posición vertical
@@ -189,10 +225,34 @@ class Criature extends Entity {
         this.pCollLeft = false;
         this.pCollRight = false;
     };
-    draw(context,offsetX,offsetY) {
+    draw(context, offsetX, offsetY) {
         // Dibuja la imagen del personaje
-        super.draw(context,offsetX,offsetY);
+        super.draw(context, offsetX, offsetY);
+    
+        // Coordenadas del centro del personaje
+        const centerX = this.x + this.width / 2 - offsetX;
+        const centerY = this.y + this.height / 2 - offsetY;
+    
+        // Radio del círculo de luz
+        const lightRadius = 150;
+    
+        // Crear un gradiente radial para el efecto de luz
+        const gradient = context.createRadialGradient(
+            centerX, centerY, 0,       // Centro del círculo, radio interior
+            centerX, centerY, lightRadius // Centro del círculo, radio exterior
+        );
+    
+        // Definir los colores del gradiente
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)'); // Blanco semitransparente en el centro
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');   // Transparente en los bordes
+    
+        // Dibujar el círculo con el gradiente
+        context.beginPath();
+        context.arc(centerX, centerY, lightRadius, 0, Math.PI * 2); // Círculo completo
+        context.fillStyle = gradient;
+        context.fill();
     }
+    
 }
 
 

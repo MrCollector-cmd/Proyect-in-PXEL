@@ -1,4 +1,4 @@
-import { mouseControlls } from "../controlls/mouse.js";
+
 class Camera {
     constructor(width, height, x, y) {
         this.width = width;  // Ancho de la cámara
@@ -6,8 +6,9 @@ class Camera {
         this.x = x;  // Coordenada X del centro de la cámara
         this.y = y;  // Coordenada Y del centro de la cámara
         this.cameraRotation = 0; // Rotación de la cámara
-        this.smoothFactor = 0.7;  // Control de suavizado
-        this.maxRotation = Math.PI / 2;  // Límite de rotación (45 grados)
+        this.smoothFactor = 0.9;  // Control de suavizado camara jugador
+        this.smoothFactorRotate = 0.2;  // Control de suavizado camara rotacion
+        this.maxRotation = Math.PI / 4;  // Límite de rotación (45 grados)
     }
 
     lerp(start, end, t) {
@@ -42,17 +43,37 @@ class Camera {
             const offsetY = posMouse.posY - playerCenterY;
     
             // Calcular el punto objetivo en la dirección del mouse
-            const distanceFactor = 200; // Factor de alejamiento máximo
+            const distanceFactor = 100; // Factor de alejamiento máximo
             const targetX = playerCenterX + offsetX / Math.sqrt(offsetX * offsetX + offsetY * offsetY) * distanceFactor;
             const targetY = playerCenterY + offsetY / Math.sqrt(offsetX * offsetX + offsetY * offsetY) * distanceFactor;
     
             // Suavizar el movimiento de la cámara hacia el objetivo
-            this.x += (targetX - this.x) * this.smoothFactor;
-            this.y += (targetY - this.y) * this.smoothFactor;
+            this.x += (targetX - this.x) * this.smoothFactorRotate;
+            this.y += (targetY - this.y) * this.smoothFactorRotate;
+        }
     
-            // Rotar la cámara en la dirección del mouse
-            const angleTarget = Math.atan2(offsetY, offsetX);
-            this.cameraRotation = this.lerp(this.cameraRotation, angleTarget, this.smoothFactor);
+        // Rotación de la cámara en torno al jugador
+        const offsetX = posMouse.posX - playerCenterX;
+        const offsetY = posMouse.posY - playerCenterY;
+    
+        // Calcular el ángulo de rotación
+        if (Math.abs(offsetX) > 1e-5 || Math.abs(offsetY) > 1e-5) {
+            // Ángulo hacia el mouse
+            let angleTarget = Math.atan2(offsetY, offsetX);
+    
+            // Ajustar la sensibilidad de la rotación
+            const rotationSensitivity = 2;  // Factor de sensibilidad de la rotación
+            angleTarget *= rotationSensitivity;  // Amplificar la rotación
+    
+            // Suavizado de la rotación (reducción de suavizado para hacerla más rápida)
+            const rotationSpeed = 1;  // Aumentamos la velocidad de rotación para hacerla más reactiva
+            this.cameraRotation += (angleTarget - this.cameraRotation) * rotationSpeed;
+    
+            // Limitar la rotación dentro de los valores permitidos
+            this.cameraRotation = Math.max(
+                -this.maxRotation,
+                Math.min(this.cameraRotation, this.maxRotation)
+            );
         }
     }
 

@@ -4,7 +4,7 @@ import { platforms } from "../../configs/patrons/patronsPlatforms.js";
 
 function Map(m) {
     this.height = size.getTilesHeight();
-    this.chunkSize = 10; // Tamaño de cada chunk en tiles
+    this.chunkSize = 20; // Tamaño de cada chunk en tiles
     this.currentChunkIndex = 0;
     this.maxChunks = m
     this.patrons = platforms; // Conjunto de patrones disponibles
@@ -15,6 +15,7 @@ function Map(m) {
 Map.prototype.getRandomPatron = function () {
     const keys = Object.keys(this.patrons);
     const randomIndex = Math.floor(Math.random() * keys.length);
+    
     return this.patrons[keys[randomIndex]];
 };
 
@@ -24,38 +25,83 @@ Map.prototype.locatePoints = function (chunkIndex) {
     const pattern = this.getRandomPatron();
     const objects = [];
 
+
     pattern.forEach((row, y) => {
-        let startX = null; // Marca el inicio de un bloque consecutivo
-        let currentWidth = 0; // Acumula el ancho del bloque
+        let startX = null; // Marca el inicio de un bloque consecutivo para `1`
+        let currentWidth = 0; // Acumula el ancho del bloque para `1`
 
         row.forEach((cell, x) => {
             if (cell === 1) {
+                // Manejo de bloques `1`
                 if (startX === null) {
-                    // Inicia un nuevo bloque
-                    startX = x;
+                    startX = x; // Inicia un nuevo bloque
                     currentWidth = 1;
                 } else {
-                    // Continúa el bloque actual
-                    currentWidth++;
+                    currentWidth++; // Continúa el bloque actual
                 }
-            } else if (cell === 2) {
-                // Crear una entidad específica para `2`
-                const rectX = x * size.tils + offsetX ;
+            }if (cell === 2) {
+                // Manejo de bloques `2` (altos)
+                const rectX = x * size.tils + offsetX;
                 const rectY = y * size.tils - size.tils * 3;
-                const width = 3*size.tils;
-                const height = 4 * size.tils; // Altura específica de 3 tiles
+                const width = 3 * size.tils;
+                const height = 4 * size.tils;
 
                 objects.push({
-                    x: rectX ,
+                    x: rectX,
                     y: rectY,
                     width,
                     height,
-                    type: "notColl", // Tipo específico
-                    texture: 'src/obstacle/tree.png', // Textura específica para objetos altos
-                    repeatTexture: false // Indicador para evitar repetición de textura
+                    type: "notColl",
+                    texture: 'src/obstacle/tree.png',
+                    repeatTexture: false
+                });
+            }if (cell === 4) {
+                // Manejo de bloques `3` (largos y anchos)
+                const rectX = x * size.tils + offsetX;
+                const rectY = y * size.tils;
+
+                // Calcular el tamaño del bloque (horizontal y vertical)
+                let blockWidth = 1; // Ancho inicial
+                let blockHeight = 1; // Alto inicial
+
+                // Expandir horizontalmente
+                for (let i = x + 1; i < row.length && pattern[y][i] === 3; i++) {
+                    blockWidth++;
+                }
+
+                // Expandir verticalmente
+                for (let j = y + 1; j < pattern.length; j++) {
+                    const currentRow = pattern[j].slice(x, x + blockWidth);
+                    if (currentRow.every(cell => cell === 3)) {
+                        blockHeight++;
+                    } else {
+                        break;
+                    }
+                }
+
+
+                // Marcar las celdas del bloque como procesadas
+                for (let j = y; j < y + blockHeight; j++) {
+                    for (let i = x; i < x + blockWidth; i++) {
+                        if (pattern[j] && pattern[j][i] === 3) {
+                            pattern[j][i] = 0; // Evitar procesarlo nuevamente
+                        } else {
+                        }
+                    }
+                }
+
+                // Agregar el bloque completo
+                objects.push({
+                    x: rectX,
+                    y: rectY,
+                    width: blockWidth * size.tils,
+                    height: blockHeight * size.tils,
+                    type: "solid",
+                    texture: 'src/terrain/terrain.png',
+                    repeatTexture: true
                 });
             } else if (startX !== null) {
-                // Fin del bloque actual, agregarlo a objetos
+                // Fin del bloque actual de `1`, agregarlo a objetos
                 const rectX = startX * size.tils + offsetX;
                 const rectY = y * size.tils;
                 const width = currentWidth * size.tils;
@@ -66,8 +112,8 @@ Map.prototype.locatePoints = function (chunkIndex) {
                     y: rectY,
                     width,
                     height,
-                    type: "solid", // Tipo para bloques consecutivos de `1`
-                    texture: 'src/terrain/terrainPlatform.png', // Textura para `1`,
+                    type: "solid",
+                    texture: 'src/terrain/terrainPlatform.png',
                     repeatTexture: true
                 });
                 startX = null;
@@ -75,7 +121,7 @@ Map.prototype.locatePoints = function (chunkIndex) {
             }
         });
 
-        // Agregar el último bloque de la fila, si existe
+        // Agregar el último bloque de la fila de `1`, si existe
         if (startX !== null) {
             const rectX = startX * size.tils + offsetX;
             const rectY = y * size.tils;
@@ -88,7 +134,7 @@ Map.prototype.locatePoints = function (chunkIndex) {
                 width,
                 height,
                 type: "solid",
-                texture: 'src/terrain/terrainPlatform.png', // Textura para `1`
+                texture: 'src/terrain/terrainPlatform.png',
                 repeatTexture: true
             });
         }
@@ -96,6 +142,7 @@ Map.prototype.locatePoints = function (chunkIndex) {
 
     return objects;
 };
+
 
 
 // Crea entidades basadas en los datos de posición y las devuelve
@@ -149,7 +196,6 @@ Map.prototype.updateMapBasedOnMouse = function (mouseWorldX, mouseWorldY) {
 Map.prototype.initialize = function () {
     console.trace("initialize llamado");
     if (this.map.length > 0) {
-        console.warn("El mapa ya ha sido inicializado.");
         return this.map; // Si ya está inicializado, no generar más
     }
 
