@@ -1,7 +1,8 @@
 const controllsKey = {
-    up:'w',
+    up:'w' || 'space',
     down:'s',
     left:'a',
     right:'d',
+    dash: 'e'
 }
 export {controllsKey}

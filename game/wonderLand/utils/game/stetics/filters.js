@@ -18,6 +18,20 @@ const filters = {
         }else{
             return true
         };
+    },
+    filterOfLimit:function (ctx,width,height,x,y) {
+        // Crea un gradiente lineal de arriba a abajo
+        const gradiente = ctx.createLinearGradient(0, height- 130, 0, height - 200);
+
+        // Agrega los colores al gradiente (de negro a transparente)
+        gradiente.addColorStop(0, 'rgba(0, 0, 0, 0.7)');      // Color negro en la parte superior
+        gradiente.addColorStop(1, 'rgba(0, 0, 0, 0)');  // Transparente en la parte inferior
+
+        // Aplica el gradiente como estilo de relleno
+        ctx.fillStyle = gradiente;
+
+        // Dibuja un rectángulo que cubra todo el canvas
+        ctx.fillRect(y, x, width, height);
     }
 }
 

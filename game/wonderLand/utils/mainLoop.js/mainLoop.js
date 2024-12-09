@@ -1,42 +1,24 @@
 import { controlls } from "../game/controlls/controlls.js";
 import { mouseControlls } from "../game/controlls/mouse.js";
 import { stateMachine } from "../stateMachine/stateMachine.js";
-
 let mainLoop = {
-    posMouse: null,
     idEjecute: null,
-    lastFrameTime: 0, // Marca de tiempo del último frame
-    apsTarget: 60, // Actualizaciones por segundo objetivo
-    fpsTarget: 60, // Frames por segundo objetivo
-    apsInterval: 1000 / 60, // Intervalo entre actualizaciones (ms)
-    fpsInterval: 1000 / 60, // Intervalo entre frames (ms)
-    lastAPS: 0, // Última actualización lógica
-    lastFPS: 0, // Última actualización gráfica
-    aps: 0, // Contador de actualizaciones por segundo
-    fps: 0, // Contador de frames por segundo
+    targetFPS: 60,
+    lastTime: 0,
     iterator: function (timestamp) {
-        mainLoop.idEjecute = window.requestAnimationFrame(mainLoop.iterator);
+        const interval = 1000 / mainLoop.targetFPS;
 
-        // Actualiza la lógica (APS) según el intervalo
-        if (timestamp - mainLoop.lastAPS >= mainLoop.apsInterval) {
+        if (timestamp - mainLoop.lastTime >= interval) {
+            console.log()
             mainLoop.refresh(timestamp);
-            mainLoop.lastAPS = timestamp;
-            mainLoop.aps++;
-        }
-
-        // Renderiza (FPS) según el intervalo
-        if (timestamp - mainLoop.lastFPS >= mainLoop.fpsInterval) {
             mainLoop.draw(timestamp);
-            mainLoop.lastFPS = timestamp;
-            mainLoop.fps++;
+            mainLoop.lastTime = timestamp;
         }
 
-        // Resetea los contadores cada segundo
-        if (timestamp - mainLoop.lastFrameTime >= 1000) {
-            mainLoop.lastFrameTime = timestamp;
-            mainLoop.aps = 0;
-            mainLoop.fps = 0;
-        }
+        mainLoop.idEjecute = window.requestAnimationFrame(mainLoop.iterator);
+    },
+    adjustFPS: function (newFPS) {
+        mainLoop.targetFPS = newFPS;
     },
     stop: function () {
         if (mainLoop.idEjecute) {
@@ -53,6 +35,7 @@ let mainLoop = {
         mouseControlls.refreshMouseStyle();
         mainLoop.posMouse = mouseControlls.getPosMouse();
         mainLoop.posMouse.mouseOut = mouseControlls.mouseOut;
+        stateMachine.draw(timestamp);
     }
 };
 

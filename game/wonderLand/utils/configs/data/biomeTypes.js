@@ -2,7 +2,7 @@ const BIOMES = {
     1:{
         name:"swamp",
         levels: 5,
-        mapsSize: 7,
+        mapsSize: 6,
         filter:{
             r:5,
             g:67,

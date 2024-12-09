@@ -1,9 +1,8 @@
 import { Game } from "../game/objects/game.js";
 import { states } from "../configs/states.js";
-// import { Player } from "../game/ojects/player.js";
-// let p = new Player(2,2);
+
 let stateMachine = {
-    stateAct: [],
+    stateAct: {instance: null, id:null},
     ini: function(e){
         stateMachine.refreshState(e)
     },
@@ -26,7 +25,7 @@ let stateMachine = {
     },
     refresh:function(regTemp){ 
         if(stateMachine.stateAct[1] === 3){
-            stateMachine.stateAct[0].start();
+            stateMachine.stateAct[0].start(regTemp);
         }
     },
     draw: function(regTemp){

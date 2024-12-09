@@ -6,7 +6,7 @@ class Camera {
         this.x = x;  // Coordenada X del centro de la cámara
         this.y = y;  // Coordenada Y del centro de la cámara
         this.cameraRotation = 0; // Rotación de la cámara
-        this.smoothFactor = 0.9;  // Control de suavizado camara jugador
+        this.smoothFactor = 0.1;  // Control de suavizado camara jugador
         this.smoothFactorRotate = 0.2;  // Control de suavizado camara rotacion
         this.maxRotation = Math.PI / 4;  // Límite de rotación (45 grados)
     }
@@ -75,6 +75,15 @@ class Camera {
                 Math.min(this.cameraRotation, this.maxRotation)
             );
         }
+    }
+    getVisibleArea() {
+        const extraVisionY = this.height * 0.5; // Un 50% adicional de la altura visible
+        return {
+            left: this.x - this.width / 2 + 60,
+            right: this.x + this.width / 2 + 60,
+            top: this.y - this.height / 2 - extraVisionY, // Extiende hacia arriba
+            bottom: this.y + this.height / 2 + extraVisionY, // Extiende hacia abajo
+        };
     }
 
     getOffset() {
