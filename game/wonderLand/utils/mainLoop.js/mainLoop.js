@@ -27,14 +27,10 @@ let mainLoop = {
         }
     },
     refresh: function (timestamp) {
-        controlls.refresh();
         stateMachine.refresh(timestamp);
-        controlls.restart();
+        
     },
     draw: function (timestamp) {
-        mouseControlls.refreshMouseStyle();
-        mainLoop.posMouse = mouseControlls.getPosMouse();
-        mainLoop.posMouse.mouseOut = mouseControlls.mouseOut;
         stateMachine.draw(timestamp);
     }
 };

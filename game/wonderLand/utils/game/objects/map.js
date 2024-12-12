@@ -36,7 +36,6 @@ Map.prototype.createObjectsInMap = function(objects) {
 
         // Agregar la entidad al mapa
         this.map[objects[1]].push(entity);
-        return entity;
     });
 };
 // Avanza al siguiente chunk
@@ -57,7 +56,8 @@ Map.prototype.advanceChunk = function() {
         this.createObjectsInMap(objects);
 
         // Agregar los nuevos objetos generados al mapa
-        this.map.index1.push(...objects);
+        this.map.index1.push(objects);
+
         this.maxChunksCreated = false
     }
 };
@@ -67,10 +67,12 @@ Map.prototype.initialize = function() {
     if (this.map.length > 0) {
         return this.map.index1; // Si ya está inicializado, no generar más
     }
-
+    // Generar el siguiente chunk usando los patrones
     readPatrons.locatePoints(this.currentChunkIndex, 'index1');
     const objects = readPatrons.dataMap;
+     // Dibujar los objetos generados en el nuevo chunk
     this.createObjectsInMap(objects);
+
     this.maxChunksCreated = false
     return this.map; // Devuelve las entidades iniciales
 };

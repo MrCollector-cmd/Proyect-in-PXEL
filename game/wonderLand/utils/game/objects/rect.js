@@ -1,5 +1,6 @@
 import { controlls } from "../controlls/controlls.js";
 import { size } from "../../configs/size.js";
+import { imagesController } from "../../configs/imagesController.js";
 class Rect {
     constructor(x, y, width, height) {
         this.x = x;
@@ -42,15 +43,16 @@ class Rect {
     };
 }
 class Entity extends Rect {
-    constructor(x, y, width, height, img, type, repeatTexture,id) {
-        super(x, y, width, height);
-        this.id = id;
-        this.type = type;
-        this.repeatTexture = repeatTexture;
-        this.img = new Image();
-        this.img.src = img;
-        this.direction = null;
-    }
+        constructor(x, y, width, height, img, type, repeatTexture, id) {
+            super(x, y, width, height);
+            this.id = id;
+            this.type = type;
+            this.repeatTexture = repeatTexture;
+            // Usamos imagesController para cargar la imagen desde el caché
+            this.img = imagesController.loadImage(img); // Aquí se carga la imagen desde el caché
+            this.direction = null;
+        }
+    
     draw(context, offsetX, offsetY) {
         if (this.img.complete && this.img.width !== 0) {
             const adjustedX = this.x - offsetX;
@@ -125,184 +127,191 @@ class Criature extends Entity {
     constructor(x, y, width, height, img, type, stats) {
         super(x, y, width, height, img, type);
         this.stats = stats;
-        this.isJumping = false;  // Indica si el jugador está saltando
-        this.jumpHeight = 0;     // Altura del salto
-        this.pCollTop = false;   // Colisión superior
-        this.pCollButton = false; // Colisión con el suelo
-        this.pCollRight = false;  // Colisión con la derecha
-        this.pCollLeft = false;   // Colisión con la izquierda
-        this.mapObjects = [];     // Objetos con los que el jugador puede chocar
-        this.velocityY = 0;        // Velocidad vertical
-        this.canJump = true;       // Indica si puede saltar (debe soltar la tecla primero)
-        this.remainingJumps = 2;   // Contador de saltos disponibles (doble salto)
-        this.dash = false;        // indica si esta dasheando
-        this.velocityX = 0        // celocidad inicial
-        this.currentDashDistance = 0; // distancia recorrida con el dash
-        this.direction = false;   // direccion en la vista del personaje
-        this.isDashing = false    // en proceso de dash
-        this.doubleJumpAvailable = true; // Indica si puede hacer un doble salto
+        this.isJumping = false;
+        this.jumpHeight = 0;
+        this.pCollTop = false;
+        this.pCollButton = false;
+        this.pCollRight = false;
+        this.pCollLeft = false;
+        this.velocityY = 0;
+        this.canJump = true;
+        this.remainingJumps = 2;
+        this.dash = false;
+        this.velocityX = 0;
+        this.currentDashDistance = 0;
+        this.direction = false;
+        this.isDashing = false;
+        this.doubleJumpAvailable = true;
+        this.animations={
+            idle:true
+        }
     }
-    move(timeStamp) {
+
+    move(mapObjects) {
         this.refreshColl();
-        const speed = 10; // Velocidad de movimiento horizontal
-        const jumpForce = -25; // Fuerza del salto
-        const gravity = 1.5; // Aceleración de la gravedad
-        const maxFallSpeed = 20; // Velocidad máxima de caída
+        const speed = 10;
+        const jumpForce = -25;
+        const gravity = 1.5;
+        const maxFallSpeed = 20;
         const speedDash = 40;
         const dashDistance = 200;
 
-        // Manejar salto
-        if (controlls.up) {
-            if (this.remainingJumps > 0 && this.canJump) {
-                this.velocityY = jumpForce; // Aplicar fuerza de salto a la velocidad vertical
-                this.isJumping = true; // Activar el estado de salto
-                this.canJump = false; // Desactivar la capacidad de saltar
-                this.remainingJumps--; // Reducir los saltos disponibles
-            }
-        } else {
-            // Solo permite saltar de nuevo cuando suelta la tecla
+        this.handleJump(jumpForce, gravity, maxFallSpeed);
+        this.handleMovement(speed);
+        this.handleDash(speedDash, dashDistance);
+        this.applyMovement();
+        this.checkCollisions(mapObjects);
+        this.updatePosition();
+    }
+
+    handleJump(jumpForce, gravity, maxFallSpeed) {
+        if (controlls.up && this.remainingJumps > 0 && this.canJump) {
+            // Realizar el salto si se cumple la condición de que el jugador puede saltar
+            this.velocityY = jumpForce;
+            this.isJumping = true;
+            this.canJump = false;
+            this.remainingJumps--;
+        } else if (!controlls.up) {
+            // Si no se está presionando la tecla de salto, el jugador puede saltar nuevamente
             this.canJump = true;
         }
-
-        // Restablecer los saltos si toca el suelo
+    
+        // Si el jugador está en el suelo (colisiona por abajo), se reinician los saltos restantes
         if (this.pCollButton) {
-            this.remainingJumps = 2; // Restablece los saltos disponibles al aterrizar
-        }
-
-        // Aplicar gravedad
-        if (!this.pCollButton) {
-            this.velocityY += gravity; // Aplicar gravedad a la velocidad vertical
-            if (this.velocityY > maxFallSpeed) {
-                this.velocityY = maxFallSpeed; // Limitar la velocidad de caída
+            // Solo reiniciar los saltos si no está ya en el suelo
+            if (this.remainingJumps === 0) {
+                this.remainingJumps = 2;  // O el número de saltos permitidos
             }
         }
+    
+        // Si el jugador no está en el suelo, la gravedad debe actuar
+        if (!this.pCollButton) {
+            this.velocityY += gravity;
+            if (this.velocityY > maxFallSpeed) {
+                this.velocityY = maxFallSpeed;  // Limitar la velocidad máxima de caída
+            }
+        }
+    }
 
-        // Movimiento horizontal
+    handleMovement(speed) {
         let moveX = 0;
-        if (controlls.left && !this.pCollLeft) {
-            moveX -= speed; // Mueve hacia la izquierda si se presiona la tecla izquierda y no hay colisión con la izquierda
-        }
-        if (controlls.right && !this.pCollRight) {
-            moveX += speed; // Mueve hacia la derecha si se presiona la tecla derecha y no hay colisión con la derecha
-        }
+        if (controlls.left && !this.pCollLeft) moveX -= speed;
+        if (controlls.right && !this.pCollRight) moveX += speed;
+        
+        // Actualizar la dirección del personaje dependiendo de la entrada
         if (controlls.right) {
             this.direction = false;
         } else if (controlls.left) {
             this.direction = true;
         }
+    
+        this.moveX = moveX;
+    }
 
-        // Dash Exponencial
+    handleDash(speedDash, dashDistance) {
         if (controlls.dash && !this.dash && !this.isDashing) {
-            this.dash = true; // Inicia el dash
-            this.isDashing = true; // Marca el estado de dash activo
-            this.velocityX = this.direction ? -speedDash : speedDash; // Aplica velocidad inicial en la dirección
-            this.currentDashDistance = 0; // Resetea la distancia recorrida
+            this.dash = true;
+            this.isDashing = true;
+            this.velocityX = this.direction ? -speedDash : speedDash;
+            this.currentDashDistance = 0;
         }
 
         if (this.dash) {
-            const dashStep = this.velocityX; // Usa la velocidad del dash directamente
-            this.currentDashDistance += Math.abs(dashStep); // Acumula la distancia recorrida
-
+            const dashStep = this.velocityX;
+            this.currentDashDistance += Math.abs(dashStep);
             if (this.currentDashDistance >= dashDistance) {
-                // Finaliza el dash si se alcanza la distancia máxima
                 this.dash = false;
                 this.velocityX = 0;
             } else {
-                moveX = dashStep; // Aplica el movimiento del dash
+                this.moveX = dashStep;
             }
         } else {
-            // Resetea isDashing si la tecla no está presionada
             if (!controlls.dash) {
                 this.isDashing = false;
             }
         }
+    }
 
-        // Aplicar movimiento horizontal
-        let newX = this.x + moveX; // Actualiza la posición horizontal
-        let newY = this.y + this.velocityY; // Actualiza la posición vertical
+    applyMovement() {
+        this.newX = this.x + this.moveX;
+        this.newY = this.y + this.velocityY;
+    }
 
-        // Verificar colisiones
+    checkCollisions(mapObjects) {
         let isOnGround = false;
-        for (let obj of this.mapObjects) { // Itera sobre los objetos del mapa
+
+        for (let obj of mapObjects) {
             if (obj.type === 'solid') {
-                // Verifica si hay colisión en Y
-                if (this.willCollide(this.x, newY, obj)) {
-                    if (this.velocityY > 0) { // Cayendo
-                        newY = obj.y - this.height; // Actualiza la posición vertical para evitar caer dentro del objeto
+                if (this.willCollide(this.x, this.newY, obj)) {
+                    if (this.velocityY > 0) {
+                        this.newY = obj.y - this.height;
                         this.velocityY = 0;
                         this.pCollButton = true;
                         isOnGround = true;
                         this.isJumping = false;
-                    } else if (this.velocityY < 0) { // Subiendo
-                        newY = obj.y + obj.height;
+                    } else if (this.velocityY < 0) {
+                        this.newY = obj.y + obj.height;
                         this.velocityY = 0;
                         this.pCollTop = true;
                     }
                 }
 
-                // Verificar colisión en X
-                if (this.willCollide(newX, this.y, obj)) {
-                    if (moveX > 0) {
-                        newX = obj.x - this.width;
+                if (this.willCollide(this.newX, this.y, obj)) {
+                    if (this.moveX > 0) {
+                        this.newX = obj.x - this.width;
                         this.pCollRight = true;
-                    } else if (moveX < 0) {
-                        newX = obj.x + obj.width;
+                    } else if (this.moveX < 0) {
+                        this.newX = obj.x + obj.width;
                         this.pCollLeft = true;
                     }
                 }
             }
         }
 
-        if (!isOnGround) { // Si no está en el suelo
-            this.pCollButton = false; // Desactiva la colisión con el suelo
+        if (!isOnGround) {
+            this.pCollButton = false;
         }
-
-        // Actualizar posición del jugador y del div
-        this.x = newX;
-        this.y = newY;
     }
+
+    updatePosition() {
+        this.x = this.newX;
+        this.y = this.newY;
+    }
+
     willCollide(x, y, obj) {
         return (
-            x < obj.x + obj.width &&            // Verifica si el jugador está a la izquierda del objeto
-            x + this.width > obj.x &&    // Verifica si el jugador está a la derecha del objeto
-            y < obj.y + obj.height &&           // Verifica si el jugador está arriba del objeto
-            y + this.height > obj.y      // Verifica si el jugador está abajo del objeto
+            x < obj.x + obj.width &&
+            x + this.width > obj.x &&
+            y < obj.y + obj.height &&
+            y + this.height > obj.y
         );
-    };
-    refreshColl () {
-        this.pCollTop = false; 
+    }
+
+    refreshColl() {
+        this.pCollTop = false;
         this.pCollLeft = false;
         this.pCollRight = false;
-    };
+    }
+
     draw(context, offsetX, offsetY) {
-        // Dibuja la imagen del personaje
         super.draw(context, offsetX, offsetY);
-    
-        // Coordenadas del centro del personaje
+        /// Crea un aro de luz
         const centerX = this.x + this.width / 2 - offsetX;
         const centerY = this.y + this.height / 2 - offsetY;
-    
-        // Radio del círculo de luz
-        const lightRadius = 150;
-    
-        // Crear un gradiente radial para el efecto de luz
-        const gradient = context.createRadialGradient(
-            centerX, centerY, 0,       // Centro del círculo, radio interior
-            centerX, centerY, lightRadius // Centro del círculo, radio exterior
-        );
-    
-        // Definir los colores del gradiente
-        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)'); // Blanco semitransparente en el centro
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');   // Transparente en los bordes
-    
-        // Dibujar el círculo con el gradiente
+        const lightRadius = 200;
+
+        const gradient = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, lightRadius);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
         context.beginPath();
-        context.arc(centerX, centerY, lightRadius, 0, Math.PI * 2); // Círculo completo
+        context.arc(centerX, centerY, lightRadius, 0, Math.PI * 2);
         context.fillStyle = gradient;
         context.fill();
+        ///////////////////
     }
-    
 }
+
 
 
 

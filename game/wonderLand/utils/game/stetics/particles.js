@@ -1,7 +1,7 @@
 import { Particle } from "../objects/particles.js"
 const particles = {
     particles:[],
-    maxParticles: 80,
+    maxParticles: 10,
     colors:[],
     animate:function(ctx,canvas) { 
        // Dibujar y actualizar las partículas
