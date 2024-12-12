@@ -4,10 +4,10 @@ const BIOMES = {
         levels: 5,
         mapsSize: 3,
         filter:{
-            r:5,
-            g:67,
-            b:21,
-            opacity: 0.3
+            r:4,
+            g:48,
+            b:15,
+            opacity: 0.5
         }
     }
 }

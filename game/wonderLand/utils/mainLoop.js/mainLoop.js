@@ -1,5 +1,4 @@
-import { controlls } from "../game/controlls/controlls.js";
-import { mouseControlls } from "../game/controlls/mouse.js";
+
 import { stateMachine } from "../stateMachine/stateMachine.js";
 let mainLoop = {
     idEjecute: null,

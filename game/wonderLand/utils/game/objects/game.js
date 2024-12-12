@@ -17,7 +17,7 @@ class Game {
         contextThisGame.readBiome(1);
 
         this.map = new Map(contextThisGame.sizeInchuncks); // Inicializamos el mapa
-        this.widthMap = this.map.maxChunks * size.tils;
+
         // Cargar al jugador
         this.loadPlayer(20, size.tils * 10, size.tils, size.tils, "src/skins/skinD.png", "player", { heal: 10, damage: 10 });
 
@@ -101,15 +101,15 @@ class Game {
         // Dibujar el mapa y jugador
         this.drawMap(offsetX, offsetY);
 
+        // Dibujar una capa de filtro
+        filters.color = contextThisGame.filter;
+        filters.createAndDrawFilter(this.context);
+        
         //dibuja al jugador
         contextThisGame.player.draw(this.context, offsetX, offsetY);
 
         //dibuja el mouse
         mouseControlls.refreshMouseStyle();
-
-        // Dibujar una capa de filtro
-        filters.color = contextThisGame.filter;
-        filters.createAndDrawFilter(this.context);
     }
 
     refresh() {
@@ -131,8 +131,7 @@ class Game {
         controlls.restart();
 
         // Actualiza la cámara para seguir al jugador
-        const posMouse = mouseControlls.getPosMouse();
-        this.updateCamera(posMouse);
+        this.updateCamera(mouseControlls.getPosMouse());
 
         
     }
