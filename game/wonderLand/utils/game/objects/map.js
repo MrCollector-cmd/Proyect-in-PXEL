@@ -11,7 +11,8 @@ function Map(m) {
     this.advanceChunkCreated = false;
     this.map = {
         index1: null,
-        index2: null
+        index2: null,
+        index3:null,
     }; // Entidades actualmente en el mapa
     this.objectsInMap = []; // Inicialización de objectsInMap
     this.maxChunksCreated = false;
@@ -33,7 +34,6 @@ Map.prototype.createObjectsInMap = function(objects) {
             obj.repeatTexture,
             obj.id
         );
-
         // Agregar la entidad al mapa
         this.map[objects[1]].push(entity);
     });

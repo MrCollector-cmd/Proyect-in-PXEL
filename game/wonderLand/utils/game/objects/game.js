@@ -28,6 +28,7 @@ class Game {
 
         //area visible
         this.visibleEntities = []
+        this.waterEntitis = []
     }
 
     updateCamera(posMouse) {
@@ -68,7 +69,7 @@ class Game {
         this.visibleEntities = [];
 
         for (const indexDraw in this.map.map) {
-            if (this.map.map[indexDraw] !== null) {
+            if (this.map.map[indexDraw] !== null && indexDraw !== 'index3') {
                 this.map.map[indexDraw].forEach(entity => {
                     if (
                         entity.x + entity.width > visibleArea.left &&
@@ -86,6 +87,28 @@ class Game {
             entity.draw(this.context, offsetX, offsetY);
         });
     }
+    drawWater(offsetX,offsetY){
+        const visibleArea = this.camera.getVisibleArea();
+
+        // Almacenar entidades visibles
+
+        this.map.map.index3.forEach(entity => {
+            if (
+                entity.x + entity.width > visibleArea.left &&
+                entity.x < visibleArea.right &&
+                entity.y + entity.height > visibleArea.top &&
+                entity.y < visibleArea.bottom
+            ) {
+                this.visibleEntities.push(entity); // Almacenamos las entidades visibles
+            }
+        });
+
+        this.visibleEntities.forEach(entity => {
+            if (entity.id === 6) {
+                entity.draw(this.context, offsetX, offsetY);
+            }
+        });
+    }
 
     clearCanvas() {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -95,18 +118,21 @@ class Game {
         // Obtiene los offsets de la cámara
         const { offsetX, offsetY } = this.camera.getOffset();
 
-        // Crea partículas
-        particles.animate(this.context, this.canvas);
-
         // Dibujar el mapa y jugador
         this.drawMap(offsetX, offsetY);
+
+        // Crea partículas
+        particles.animate(this.context, this.canvas); 
 
         // Dibujar una capa de filtro
         filters.color = contextThisGame.filter;
         filters.createAndDrawFilter(this.context);
-        
+
         //dibuja al jugador
         contextThisGame.player.draw(this.context, offsetX, offsetY);
+
+        //dibuja el agua
+        this.drawWater(offsetX,offsetY)
 
         //dibuja el mouse
         mouseControlls.refreshMouseStyle();
@@ -119,6 +145,8 @@ class Game {
         //carga los chunks del mapa
         if (!this.map.maxChunksCreated) {
             this.loadMap();
+            let water = readPatrons.findEntitiesWithIdFiveAndWidths(this.map.map.index1)
+            this.map.map.index3 = water
         }
 
         // comienzo de escucha de controles

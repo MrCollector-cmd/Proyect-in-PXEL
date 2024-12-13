@@ -17,7 +17,7 @@ class Particle {
 
         // Gradiente radial para simular luz
         gradient.addColorStop(0, `rgba(255, 223, 0, ${this.opacity})`); // Amarillo brillante
-        gradient.addColorStop(1, `rgba(255, 223, 0, 0)`); // Transparente al final
+        gradient.addColorStop(1, `rgba(248, 222, 56, 0)`); // Transparente al final
 
         ctx.globalAlpha = this.opacity;
         ctx.fillStyle = gradient;

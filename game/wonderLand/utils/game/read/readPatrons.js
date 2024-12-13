@@ -50,9 +50,10 @@ const readPatrons = {
     
                 // Definición de objeto
                 const rectX = x * size.tils + offsetX;
-                const rectY = y * size.tils;
+                let rectY = y * size.tils;
                 const width = blockWidth * size.tils;
-                const height = blockHeight * size.tils;
+                let height = blockHeight * size.tils;
+                let notHeigt = false;
     
                 let objectType = "solid";
                 let texture = "src/terrain/terrainPlatform.png";
@@ -69,22 +70,42 @@ const readPatrons = {
                     texture = "src/terrain/terrain.png";
                     repeatTexture = true;
                     id = 4;
+                }else if (cell === 5) {
+                    objectType = "solid";
+                    texture = "src/terrain/swamp/tarrain/waterBackground.png";
+                    repeatTexture = true;
+                    notHeigt = true;
+                    id = 5;
                 }
     
-                // Añadimos el objeto al array de objetos
-                objects.push({
-                    x: rectX,
-                    y: rectY,
-                    width,
-                    height,
-                    type: objectType,
-                    texture,
-                    repeatTexture,
-                    id: id
-                });
+                if (!notHeigt) {
+                    // Añadimos el objeto al array de objetos
+                    objects.push({
+                        x: rectX,
+                        y: rectY,
+                        width,
+                        height,
+                        type: objectType,
+                        texture,
+                        repeatTexture,
+                        id: id
+                    });
+                }else{ 
+                    rectY = rectY + 15 
+                    objects.push({
+                        x: rectX,
+                        y: rectY,
+                        width,
+                        height,
+                        type: objectType,
+                        texture,
+                        repeatTexture,
+                        id: id
+                    });
+                }
+                    
             }
         }
-    
         readPatrons.dataMap = [objects, index];
     },
     getPositionsWithIdOne: function(map) {
@@ -155,6 +176,37 @@ const readPatrons = {
         }
     
         return entitys;
+    },
+    // Busca entidades con ID 5 y calcula su agrupamiento y crea una nueva entidad
+    findEntitiesWithIdFiveAndWidths: function (map) {
+        const entitiesWithIdFive = map.filter(entity => entity.id === 5);
+
+        // Agrupar las entidades cercanas por su posición X
+        const groups = [];
+        let currentGroup = [];
+        let lastX = null;
+
+        for (let entity of entitiesWithIdFive.sort((a, b) => a.x - b.x)) {
+            if (lastX === null || Math.abs(entity.x - lastX) <= size.tils) {
+                currentGroup.push(entity);
+            } else {
+                groups.push(currentGroup);
+                currentGroup = [entity];
+            }
+            lastX = entity.x;
+        }
+
+        if (currentGroup.length > 0) groups.push(currentGroup);
+
+        // Crear entidades nuevas basadas en los grupos
+        return groups.map(group => {
+            const totalWidth = group.reduce((sum, entity) => sum + entity.width, 0);
+            const x = group[0].x;
+            const y = group[0].y - 15; // Posición Y justo encima del grupo
+
+            // Crear la nueva entidad
+            return new Entity(x, y, totalWidth, 15, "src/terrain/swamp/water.png", "notCollOp", false, 6, 0.3);
+        });
     }
 }
 export { readPatrons };

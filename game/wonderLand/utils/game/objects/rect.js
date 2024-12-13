@@ -43,84 +43,76 @@ class Rect {
     };
 }
 class Entity extends Rect {
-        constructor(x, y, width, height, img, type, repeatTexture, id) {
+        constructor(x, y, width, height, img, type, repeatTexture, id, opacity) {
             super(x, y, width, height);
             this.id = id;
             this.type = type;
+            this.opacity = opacity
             this.repeatTexture = repeatTexture;
             // Usamos imagesController para cargar la imagen desde el caché
             this.img = imagesController.loadImage(img); // Aquí se carga la imagen desde el caché
             this.direction = null;
         }
     
-    draw(context, offsetX, offsetY) {
-        if (this.img.complete && this.img.width !== 0) {
-            const adjustedX = this.x - offsetX;
-            const adjustedY = this.y - offsetY;
-
-            if (this.repeatTexture === true) {
-                
-                // Dibujar la imagen repetida en tiles
-                const tilesX = Math.ceil(this.width / size.tils); // Cantidad de tiles en X
-                const tilesY = Math.ceil(this.height / size.tils); // Cantidad de tiles en Y
-                
-                for (let i = 0; i < tilesX; i++) {
-                    for (let j = 0; j < tilesY; j++) {
-                        context.drawImage(
-                            this.img,
-                            adjustedX + i * size.tils, // Posición X del tile
-                            adjustedY + j * size.tils, // Posición Y del tile
-                            size.tils,                 // Ancho del tile
-                            size.tils                  // Alto del tile
-                        );
-                        
-                    }
+        draw(context, offsetX, offsetY) {
+            if (this.img.complete && this.img.width !== 0) {
+                const adjustedX = this.x - offsetX;
+                const adjustedY = this.y - offsetY;
+        
+                // Verificar visibilidad antes de dibujar
+                const canvasWidth = context.canvas.width;
+                const canvasHeight = context.canvas.height;
+                if (
+                    adjustedX + this.width < 0 || adjustedX > canvasWidth ||
+                    adjustedY + this.height < 0 || adjustedY > canvasHeight
+                ) {
+                    return; // No dibujar si está fuera del área visible
                 }
-                // // Configuración del estilo del contorno
-                // context.strokeStyle = 'red'; // Color del contorno
-                // context.lineWidth = 3; // Grosor del contorno
-
-                // // Dibuja el contorno del rectángulo
-                // context.strokeRect(adjustedX, adjustedY, this.width, this.height);
-            }
-            else {
-                if (this.direction !== null) {
-                    // Dibuja la imagen según la dirección
-                    context.save(); // Guarda el estado del contexto
-                
-                    if (this.direction) {
-                        // Reflejar horizontalmente
-                        context.translate(adjustedX + this.width, adjustedY); // Ajusta la posición destino
-                        context.scale(-1, 1); // Escala horizontalmente
-                    } else {
-                        // Dirección 'right' o por defecto: sin reflejo
-                        context.translate(adjustedX, adjustedY);
+        
+                // Aplicar opacidad si está definida
+                const originalAlpha = context.globalAlpha; // Guardar la opacidad actual
+                if (this.opacity !== undefined) {
+                    context.globalAlpha = this.opacity;
+                }
+        
+                if (this.repeatTexture) {
+                    // Modo de repetición de textura en tiles
+                    const tilesX = Math.ceil(this.width / size.tils); // Número de tiles en X
+                    const tilesY = Math.ceil(this.height / size.tils); // Número de tiles en Y
+        
+                    for (let i = 0; i < tilesX; i++) {
+                        for (let j = 0; j < tilesY; j++) {
+                            // Coordenadas del tile actual
+                            const tileX = adjustedX + i * size.tils;
+                            const tileY = adjustedY + j * size.tils;
+        
+                            // Calcular dimensiones del tile para manejar bordes
+                            const tileWidth = Math.min(size.tils, this.width - i * size.tils);
+                            const tileHeight = Math.min(size.tils, this.height - j * size.tils);
+        
+                            // Dibujar el tile ajustando los bordes si es necesario
+                            context.drawImage(
+                                this.img,
+                                0, 0, this.img.width, this.img.height, // Fuente completa
+                                tileX, tileY,                        // Coordenadas del tile
+                                tileWidth, tileHeight                // Dimensiones del tile
+                            );
+                        }
                     }
-                
-                    // Dibujar la imagen
+                } else {
+                    // Dibujar una sola imagen si no se repite la textura
                     context.drawImage(
                         this.img,
-                        0, 0, this.img.width, this.img.height, // Fuente: toda la imagen
-                        0, 0, this.width, this.height          // Dibuja en el destino con el tamaño ajustado
+                        0, 0, this.img.width, this.img.height, // Fuente completa
+                        adjustedX, adjustedY,                 // Coordenadas destino
+                        this.width, this.height               // Tamaño destino
                     );
-                
-                    context.restore(); // Restaura el contexto
-                }else{
-                    // Dibujar la imagen ajustada al tamaño del objeto (sin repetir)
-                    context.drawImage(
-                    this.img,
-                    0, 0, this.img.width, this.img.height, // Fuente: toda la imagen
-                    adjustedX, adjustedY,                 // Posición destino
-                    this.width, this.height               // Tamaño destino
-                );
                 }
-                
+        
+                // Restaurar la opacidad original
+                context.globalAlpha = originalAlpha;
             }
-            
-        } else {
-            
         }
-    }
 }
 
 class Criature extends Entity {
@@ -298,7 +290,7 @@ class Criature extends Entity {
         /// Crea un aro de luz
         const centerX = this.x + this.width / 2 - offsetX;
         const centerY = this.y + this.height / 2 - offsetY;
-        const lightRadius = 200;
+        const lightRadius = 250;
 
         const gradient = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, lightRadius);
         gradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
