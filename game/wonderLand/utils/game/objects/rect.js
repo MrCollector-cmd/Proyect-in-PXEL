@@ -58,7 +58,7 @@ class Entity extends Rect {
             if (this.img.complete && this.img.width !== 0) {
                 const adjustedX = this.x - offsetX;
                 const adjustedY = this.y - offsetY;
-        
+    
                 // Verificar visibilidad antes de dibujar
                 const canvasWidth = context.canvas.width;
                 const canvasHeight = context.canvas.height;
@@ -68,28 +68,28 @@ class Entity extends Rect {
                 ) {
                     return; // No dibujar si está fuera del área visible
                 }
-        
+    
                 // Aplicar opacidad si está definida
                 const originalAlpha = context.globalAlpha; // Guardar la opacidad actual
                 if (this.opacity !== undefined) {
                     context.globalAlpha = this.opacity;
                 }
-        
+    
                 if (this.repeatTexture) {
                     // Modo de repetición de textura en tiles
                     const tilesX = Math.ceil(this.width / size.tils); // Número de tiles en X
                     const tilesY = Math.ceil(this.height / size.tils); // Número de tiles en Y
-        
+    
                     for (let i = 0; i < tilesX; i++) {
                         for (let j = 0; j < tilesY; j++) {
                             // Coordenadas del tile actual
                             const tileX = adjustedX + i * size.tils;
                             const tileY = adjustedY + j * size.tils;
-        
+    
                             // Calcular dimensiones del tile para manejar bordes
                             const tileWidth = Math.min(size.tils, this.width - i * size.tils);
                             const tileHeight = Math.min(size.tils, this.height - j * size.tils);
-        
+    
                             // Dibujar el tile ajustando los bordes si es necesario
                             context.drawImage(
                                 this.img,
@@ -100,15 +100,36 @@ class Entity extends Rect {
                         }
                     }
                 } else {
-                    // Dibujar una sola imagen si no se repite la textura
-                    context.drawImage(
-                        this.img,
-                        0, 0, this.img.width, this.img.height, // Fuente completa
-                        adjustedX, adjustedY,                 // Coordenadas destino
-                        this.width, this.height               // Tamaño destino
-                    );
+                    // Si direction es true, voltear la imagen en X
+                    if (this.direction) {
+                        context.save(); // Guardar el estado actual del contexto
+    
+                        // Ajustar la escala en el eje X
+                        context.scale(-1, 1);
+    
+                        // Ajustar la posición X para reflejar la imagen correctamente
+                        const flippedX = -(adjustedX + this.width);
+    
+                        // Dibujar la imagen reflejada en el eje X
+                        context.drawImage(
+                            this.img,
+                            0, 0, this.img.width, this.img.height, // Fuente completa
+                            flippedX, adjustedY,                   // Coordenadas destino
+                            this.width, this.height               // Tamaño destino
+                        );
+    
+                        context.restore(); // Restaurar el estado original del contexto
+                    } else {
+                        // Dibujar la imagen sin voltear si direction es false
+                        context.drawImage(
+                            this.img,
+                            0, 0, this.img.width, this.img.height, // Fuente completa
+                            adjustedX, adjustedY,                 // Coordenadas destino
+                            this.width, this.height               // Tamaño destino
+                        );
+                    }
                 }
-        
+    
                 // Restaurar la opacidad original
                 context.globalAlpha = originalAlpha;
             }

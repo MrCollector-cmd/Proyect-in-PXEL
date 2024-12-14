@@ -8,12 +8,14 @@ import { contextThisGame } from "./context.js";
 import { readPatrons } from "../read/readPatrons.js";
 import { particles } from "../stetics/particles.js";
 import { controlls } from "../controlls/controlls.js";
+import { BasicEnemy } from "./enemies/BasicEnemy.js";
 class Game {
     constructor() {
         this.canvas = document.getElementById('gameWorld');
         this.updateCanvasSize();
         this.context = this.canvas.getContext('2d');
-
+        this.background =new Image()
+        this.background.src = 'src/terrain/background/Background1.png'
         contextThisGame.readBiome(1);
 
         this.map = new Map(contextThisGame.sizeInchuncks); // Inicializamos el mapa
@@ -29,6 +31,52 @@ class Game {
         //area visible
         this.visibleEntities = []
         this.waterEntitis = []
+
+        // Inicializar enemigos
+        this.enemies = [];
+        
+        // Crear múltiples enemigos en diferentes posiciones
+        this.createEnemies([
+            { x: size.tils * 15, y: size.tils * 10 },
+            { x: size.tils * 25, y: size.tils * 10 },
+            { x: size.tils * 35, y: size.tils * 10 },
+            { x: size.tils * 45, y: size.tils * 10 }
+        ]);
+    }
+
+    createEnemies(positions) {
+        positions.forEach(pos => {
+            const enemy = new BasicEnemy(
+                pos.x, 
+                pos.y, 
+                size.tils, 
+                size.tils, 
+                'src/terrain/swamp/enemy/slime.png', 
+                "enemy", 
+                { heal: 5, damage: 5 }
+            );
+            this.enemies.push(enemy);
+        });
+    }
+
+    //actualiza los enemigos
+    updateEnemies() {
+        const visibleArea = this.camera.getVisibleArea();
+
+
+        this.enemies.forEach(enemy => {
+            //verifica si el enemigo esta en la pantalla
+            if (enemy.x + enemy.width > visibleArea.left -500 &&
+                enemy.x < visibleArea.right +500 &&
+                enemy.y + enemy.height > visibleArea.top &&
+                enemy.y < visibleArea.bottom - 200) {
+                // Agregamos el enemigo a las entidades visibles
+                this.visibleEntities.push(enemy);
+                enemy.view = true
+                enemy.update(this.visibleEntities)
+            }
+            enemy.view = false
+        });
     }
 
     updateCamera(posMouse) {
@@ -72,8 +120,8 @@ class Game {
             if (this.map.map[indexDraw] !== null && indexDraw !== 'index3') {
                 this.map.map[indexDraw].forEach(entity => {
                     if (
-                        entity.x + entity.width > visibleArea.left &&
-                        entity.x < visibleArea.right &&
+                        entity.x + entity.width > visibleArea.left - 500&&
+                        entity.x < visibleArea.right + 500 &&
                         entity.y + entity.height > visibleArea.top &&
                         entity.y < visibleArea.bottom
                     ) {
@@ -87,6 +135,22 @@ class Game {
             entity.draw(this.context, offsetX, offsetY);
         });
     }
+
+    //dibuja los enemigos
+    drawEnemies(offsetX, offsetY) {
+        const visibleArea = this.camera.getVisibleArea();
+        
+        this.enemies.forEach(enemy => {
+            //verifica si el enemigo esta en la pantalla
+            if (enemy.x + enemy.width > visibleArea.left - 500&&
+                enemy.x < visibleArea.right + 200  &&
+                enemy.y + enemy.height > visibleArea.top &&
+                enemy.y < visibleArea.bottom) {
+                enemy.draw(this.context, offsetX, offsetY);
+            }
+        });
+    }
+
     drawWater(offsetX,offsetY){
         const visibleArea = this.camera.getVisibleArea();
 
@@ -94,8 +158,8 @@ class Game {
 
         this.map.map.index3.forEach(entity => {
             if (
-                entity.x + entity.width > visibleArea.left &&
-                entity.x < visibleArea.right &&
+                entity.x + entity.width > visibleArea.left -200 &&
+                entity.x < visibleArea.right +200 &&
                 entity.y + entity.height > visibleArea.top &&
                 entity.y < visibleArea.bottom
             ) {
@@ -118,11 +182,16 @@ class Game {
         // Obtiene los offsets de la cámara
         const { offsetX, offsetY } = this.camera.getOffset();
 
-        // Dibujar el mapa y jugador
-        this.drawMap(offsetX, offsetY);
+        //dibuja el fondo
+        filters.drawBackground(this.context,'image',{image:this.background,blur:1})
 
         // Crea partículas
-        particles.animate(this.context, this.canvas); 
+        particles.animate(this.context, this.canvas, offsetX,offsetY); 
+
+        filters.drawBackground(this.context,'blur',{blur:10})
+        // Dibujar el mapa y jugador
+        this.drawMap(offsetX, offsetY);
+        this.drawEnemies(offsetX, offsetY);
 
         // Dibujar una capa de filtro
         filters.color = contextThisGame.filter;
@@ -134,6 +203,12 @@ class Game {
         //dibuja el agua
         this.drawWater(offsetX,offsetY)
 
+        // Crea partículas
+        particles.animate(this.context, this.canvas, offsetX,offsetY); 
+
+        // sombras de la pantalla
+        filters.drawBackground(this.context,'shadowsX')
+
         //dibuja el mouse
         mouseControlls.refreshMouseStyle();
     }
@@ -141,7 +216,6 @@ class Game {
     refresh() {
         // Limpia el canvas
         this.clearCanvas();
-
         //carga los chunks del mapa
         if (!this.map.maxChunksCreated) {
             this.loadMap();
@@ -151,8 +225,7 @@ class Game {
 
         // comienzo de escucha de controles
         controlls.refresh();
-
-        // Mueve al jugador
+        this.updateEnemies()
         contextThisGame.player.move(this.visibleEntities);
         
         // fin de escucha y reseteo de controles
@@ -160,8 +233,6 @@ class Game {
 
         // Actualiza la cámara para seguir al jugador
         this.updateCamera(mouseControlls.getPosMouse());
-
-        
     }
 }
 

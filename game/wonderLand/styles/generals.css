@@ -9,21 +9,9 @@ body{
     cursor: none;
     
 }
-.cap{
-    position: absolute;
-    top: 0;
-    height: 100%;
-    width: 100%;
-    background: rgb(255,255,255);
-    background: radial-gradient(circle, rgba(255,255,255,0) 64%, rgba(0,0,0,1) 97%);
-}
 #gameWorld {
     width: 100%;
     height: 100%;
     position: relative;
-    background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), 
-                url('../src/terrain/background/Background1.png');
-    background-size:100% 100%;
-    background-repeat: no-repeat;
 }
 
