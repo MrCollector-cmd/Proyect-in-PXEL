@@ -6,7 +6,7 @@ class Particle {
         this.color = color;
         this.velocity = velocity;
         this.opacity = 0; // Empieza completamente transparente
-        this.lifeSpan = Math.random() * 50 + 50; // Duración aleatoria
+        this.lifeSpan = Math.random() * 50 + 150; // Duración aleatoria
         this.age = 0; // Tiempo transcurrido desde la creación
         this.isDead = false;
     }

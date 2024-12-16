@@ -13,6 +13,7 @@ function Map(m) {
         index1: null,
         index2: null,
         index3:null,
+        index4:null,
     }; // Entidades actualmente en el mapa
     this.objectsInMap = []; // Inicialización de objectsInMap
     this.maxChunksCreated = false;
@@ -68,7 +69,7 @@ Map.prototype.initialize = function() {
         return this.map.index1; // Si ya está inicializado, no generar más
     }
     // Generar el siguiente chunk usando los patrones
-    readPatrons.locatePoints(this.currentChunkIndex, 'index1');
+    readPatrons.locatePoints(this.currentChunkIndex, 'index1',{patronStart:"patronOne"});
     const objects = readPatrons.dataMap;
      // Dibujar los objetos generados en el nuevo chunk
     this.createObjectsInMap(objects);
