@@ -58,7 +58,7 @@ class Game {
                     const playerCenterX = contextThisGame.player.x + contextThisGame.player.width / 2;
                     const playerCenterY = contextThisGame.player.y + contextThisGame.player.height / 2;
                     
-                    // Calcular posición del mouse en el mundo
+                    // Corregir el cálculo de la posición del mouse en el mundo
                     const mouseWorldX = e.clientX + offsetX;
                     const mouseWorldY = e.clientY + offsetY;
                     
@@ -96,17 +96,15 @@ class Game {
 
 
         this.enemies.forEach(enemy => {
-            //verifica si el enemigo esta en la pantalla
+            enemy.view = false;
             if (enemy.x + enemy.width > visibleArea.left - 100 &&
                 enemy.x < visibleArea.right +100 &&
                 enemy.y + enemy.height > visibleArea.top &&
                 enemy.y < visibleArea.bottom - 200) {
-                // Agregamos el enemigo a las entidades visibles
                 this.visibleEntitiesFirstLayer.push(enemy);
-                enemy.view = true
-                enemy.update(this.visibleEntitiesFirstLayer)
+                enemy.view = true;
+                enemy.update(this.visibleEntitiesFirstLayer);
             }
-            enemy.view = false
         });
     }
 
@@ -214,16 +212,18 @@ class Game {
 
         // Almacenar entidades visibles
 
-        this.map.map.index3.forEach(entity => {
-            if (
-                entity.x + entity.width > visibleArea.left -200 &&
-                entity.x < visibleArea.right +200 &&
-                entity.y + entity.height > visibleArea.top &&
-                entity.y < visibleArea.bottom
-            ) {
-                this.visibleEntitiesFirstLayer.push(entity); // Almacenamos las entidades visibles
-            }
-        });
+        if (this.map.map.index3) {
+            this.map.map.index3.forEach(entity => {
+                if (
+                    entity.x + entity.width > visibleArea.left -200 &&
+                    entity.x < visibleArea.right +200 &&
+                    entity.y + entity.height > visibleArea.top &&
+                    entity.y < visibleArea.bottom
+                ) {
+                    this.visibleEntitiesFirstLayer.push(entity); // Almacenamos las entidades visibles
+                }
+            });
+        }
 
         this.visibleEntitiesFirstLayer.forEach(entity => {
             if (entity.id === 6) {
@@ -256,6 +256,14 @@ class Game {
         //dibuja al jugador
         contextThisGame.player.draw(this.context, offsetX, offsetY);
 
+        
+        // dibuja una segunda capa
+        this.drawMapSecondLayer(offsetX,offsetY)
+
+        // Dibujar una capa de filtro
+        // filters.color;
+        // filters.createAndDrawFilter(this.context);
+        
         //dibuja el agua
         this.drawWater(offsetX,offsetY)
         console.log(this.visibleEntitiesFirstLayer, this.visibleEntitiesSecondLayer)
@@ -277,9 +285,9 @@ class Game {
         mouseControlls.refreshMouseStyle();
 
         // Dibujar proyectiles
-        this.projectiles.forEach(projectile => {
-            projectile.draw(this.context, offsetX, offsetY);
-        });
+        this.drawProjectiles(offsetX, offsetY);
+        //dibuja el mouse
+        mouseControlls.refreshMouseStyle();
     }
 
     refresh(regTemp) {
@@ -295,11 +303,14 @@ class Game {
         // comienzo de escucha de controles
         controlls.refresh();
         this.updateEnemies()
-        contextThisGame.player.move(this.visibleEntities);
+        contextThisGame.player.move(this.visibleEntitiesFirstLayer, regTemp);
         
         // fin de escucha y reseteo de controles
         controlls.restart();
 
+        // Actualizar proyectiles
+        this.updateProjectiles();
+        
         // Actualiza la cámara para seguir al jugador
         this.updateCamera(mouseControlls.getPosMouse());
     }
@@ -324,6 +335,19 @@ class Game {
             }
             
             return projectile.active;
+        });
+    }
+
+    drawProjectiles(offsetX, offsetY) {
+        const visibleArea = this.camera.getVisibleArea();
+        
+        this.projectiles.forEach(projectile => {
+            if (projectile.x + projectile.size > visibleArea.left &&
+                projectile.x - projectile.size < visibleArea.right &&
+                projectile.y + projectile.size > visibleArea.top &&
+                projectile.y - projectile.size < visibleArea.bottom) {
+                projectile.draw(this.context, offsetX, offsetY);
+            }
         });
     }
 }
