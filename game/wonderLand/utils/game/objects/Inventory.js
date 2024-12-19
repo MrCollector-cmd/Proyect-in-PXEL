@@ -9,10 +9,8 @@ class Inventory {
         this.isOpen = false;
         this.selectedItem = null;
 
-        // Agregar algunos items de prueba
-        this.addItem(new Item(1, "Cubo Azul", "test"));
-        this.addItem(new Item(2, "Cubo Azul", "test"));
-        this.addItem(new Item(3, "Cubo Azul", "test"));
+        // Cambiar el cubo azul por un arco
+        this.addItem(new Item(1, "Arco", "test"));
 
         // Agregar event listener para clicks
         document.addEventListener('click', (e) => {

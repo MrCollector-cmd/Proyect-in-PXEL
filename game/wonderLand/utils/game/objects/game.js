@@ -11,6 +11,7 @@ import { controlls } from "../controlls/controlls.js";
 import { BasicEnemy } from "./enemies/BasicEnemy.js";
 import { Inventory } from "./Inventory.js";
 import { Projectile } from "./Projectile.js";
+import { Bow } from "./weapons/Bow.js";
 
 class Game {
     constructor() {
@@ -49,28 +50,70 @@ class Game {
         this.inventory = new Inventory();
 
         this.projectiles = [];
+        this.lastProjectileTime = 0;
+        this.projectileCooldown = 500;
+        this.bowCharge = 0;
+        this.bowCharging = false;
+        this.maxBowCharge = 1000;
 
+        // Inicializar el arco
+        this.bow = new Bow();
+
+        // Añadir imágenes del arco
+        this.bowImages = {
+            frame1: new Image(),
+            frame2: new Image(),
+            frame3: new Image()
+        };
+        this.bowImages.frame1.src = 'src/weapons/BowFrame1.png';
+        this.bowImages.frame2.src = 'src/weapons/BowFrame2.png';
+        this.bowImages.frame3.src = 'src/weapons/BowFrame3.png';
+        
+        this.currentBowFrame = this.bowImages.frame1;
+
+        // Modificar el evento mousedown
         this.canvas.addEventListener('mousedown', (e) => {
-            if (e.button === 0) { // 0 es clic izquierdo
-                // Verificar si hay un item equipado y es el cubo azul
-                if (this.inventory.selectedItem && this.inventory.selectedItem.type === "test") {
-                    const { offsetX, offsetY } = this.camera.getOffset();
-                    const playerCenterX = contextThisGame.player.x + contextThisGame.player.width / 2;
-                    const playerCenterY = contextThisGame.player.y + contextThisGame.player.height / 2;
-                    
-                    // Corregir el cálculo de la posición del mouse en el mundo
-                    const mouseWorldX = e.clientX + offsetX;
-                    const mouseWorldY = e.clientY + offsetY;
-                    
-                    // Crear nuevo proyectil
-                    const projectile = new Projectile(
-                        playerCenterX,
-                        playerCenterY,
-                        mouseWorldX,
-                        mouseWorldY
-                    );
-                    this.projectiles.push(projectile);
-                }
+            if (e.button === 0 && 
+                this.inventory.selectedItem && 
+                this.inventory.selectedItem.type === "test" &&
+                Date.now() - this.lastProjectileTime >= this.projectileCooldown) {
+                
+                this.bowCharging = true;
+                this.bowCharge = 0;
+                this.chargeStartTime = Date.now();
+            }
+        });
+
+        // Agregar evento mouseup
+        this.canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 0 && this.bowCharging) {
+                const chargeTime = Date.now() - this.chargeStartTime;
+                this.bowCharge = Math.min(chargeTime, this.maxBowCharge);
+                
+                const { offsetX, offsetY } = this.camera.getOffset();
+                const playerCenterX = contextThisGame.player.x + contextThisGame.player.width / 2;
+                const playerCenterY = contextThisGame.player.y + contextThisGame.player.height / 2;
+                
+                const mouseWorldX = e.clientX + offsetX;
+                const mouseWorldY = e.clientY + offsetY;
+                
+                // Calcular potencia y gravedad basada en la carga
+                const chargeRatio = this.bowCharge / this.maxBowCharge;
+                const power = 15 + chargeRatio * 20; // Entre 15 y 35
+                const gravity = 1.5 - chargeRatio * 1.3; // Entre 1.5 y 0.2
+                
+                const projectile = new Projectile(
+                    playerCenterX,
+                    playerCenterY,
+                    mouseWorldX,
+                    mouseWorldY,
+                    power,
+                    gravity
+                );
+                
+                this.projectiles.push(projectile);
+                this.lastProjectileTime = Date.now();
+                this.bowCharging = false;
             }
         });
     }
@@ -255,6 +298,7 @@ class Game {
 
         //dibuja al jugador
         contextThisGame.player.draw(this.context, offsetX, offsetY);
+        this.drawSelectedItem(offsetX, offsetY);
 
         
         // dibuja una segunda capa
@@ -299,7 +343,7 @@ class Game {
             let water = readPatrons.findEntitiesWithIdFiveAndWidths(this.map.map.index1)
             this.map.map.index3 = water
         }
-
+        this.updateEnemies()
         // comienzo de escucha de controles
         controlls.refresh();
         this.updateEnemies()
@@ -307,30 +351,38 @@ class Game {
         
         // fin de escucha y reseteo de controles
         controlls.restart();
-
+        
         // Actualizar proyectiles
         this.updateProjectiles();
         
         // Actualiza la cámara para seguir al jugador
         this.updateCamera(mouseControlls.getPosMouse());
+
+        // Actualizar el frame del arco si está cargando
+        if (this.bowCharging) {
+            const chargeTime = Date.now() - this.chargeStartTime;
+            const chargeRatio = Math.min(chargeTime, this.maxBowCharge) / this.maxBowCharge;
+            this.bow.updateFrame(chargeRatio);
+        } else {
+            this.bow.updateFrame(0);
+        }
     }
 
     updateProjectiles() {
         this.projectiles = this.projectiles.filter(projectile => {
-            projectile.update();
+            projectile.update(this.visibleEntitiesFirstLayer);
             
             // Verificar colisiones con enemigos
             for (let enemy of this.enemies) {
                 if (projectile.checkEnemyCollision(enemy)) {
-                    // Si hay colisión, reducir la vida del enemigo
                     if (enemy.stats && enemy.stats.heal > 0) {
                         enemy.stats.heal -= 2;
                         if (enemy.stats.heal <= 0) {
-                            // Eliminar el enemigo si su vida llega a 0
                             this.enemies = this.enemies.filter(e => e !== enemy);
                         }
                     }
-                    return false; // Eliminar el proyectil
+                    projectile.createExplosion();
+                    return true;
                 }
             }
             
@@ -349,6 +401,22 @@ class Game {
                 projectile.draw(this.context, offsetX, offsetY);
             }
         });
+    }
+
+    drawSelectedItem(offsetX, offsetY) {
+        if (this.inventory.selectedItem && this.inventory.selectedItem.type === "test") {
+            const player = contextThisGame.player;
+            const playerCenterX = player.x + player.width/2;
+            const playerCenterY = player.y + player.height/2;
+            
+            this.bow.drawInHand(
+                this.context,
+                playerCenterX,
+                playerCenterY,
+                offsetX,
+                offsetY
+            );
+        }
     }
 }
 

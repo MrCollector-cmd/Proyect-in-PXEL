@@ -1,3 +1,5 @@
+import { Bow } from "./weapons/Bow.js";
+
 class Item {
     constructor(id, name, type) {
         this.id = id;
@@ -5,18 +7,26 @@ class Item {
         this.type = type;
         this.quantity = 1;
         this.isEquipped = false;
+        this.weapon = type === "test" ? new Bow() : null;
+    }
+
+    updateFrame(chargeRatio = 0) {
+        if (this.weapon) {
+            this.weapon.updateFrame(chargeRatio);
+        }
     }
 
     draw(context, x, y, size) {
-        // Dibujar un cubo azul simple
-        context.fillStyle = 'rgba(0, 100, 255, 0.8)';
-        context.fillRect(x + 5, y + 5, size - 10, size - 10);
-        
-        // Si está equipado, agregar un borde dorado
-        context.strokeStyle = this.isEquipped ? 'gold' : 'white';
-        context.lineWidth = this.isEquipped ? 3 : 1;
-        context.strokeRect(x + 5, y + 5, size - 10, size - 10);
-        context.lineWidth = 1;
+        if (this.isEquipped) {
+            context.strokeStyle = 'gold';
+            context.lineWidth = 3;
+            context.strokeRect(x, y, size, size);
+            context.lineWidth = 1;
+        }
+
+        if (this.weapon) {
+            this.weapon.drawInInventory(context, x, y, size);
+        }
 
         if (this.quantity > 1) {
             context.fillStyle = 'white';
@@ -26,12 +36,8 @@ class Item {
     }
 
     drawInHand(context, x, y, offsetX, offsetY) {
-        if (this.isEquipped) {
-            const size = 30;
-            context.fillStyle = 'rgba(0, 100, 255, 0.8)';
-            context.fillRect(x - offsetX + 40, y - offsetY + 20, size, size);
-            context.strokeStyle = 'white';
-            context.strokeRect(x - offsetX + 40, y - offsetY + 20, size, size);
+        if (this.isEquipped && this.weapon) {
+            this.weapon.drawInHand(context, x, y, offsetX, offsetY);
         }
     }
 }
