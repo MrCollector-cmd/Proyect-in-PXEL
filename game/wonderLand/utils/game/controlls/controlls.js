@@ -8,6 +8,10 @@ let controlls = {
     down:false,
     left:false,
     right:false,
+    inventoryOpen: false,
+    inventoryPressed: false,
+    lastInventoryPress: 0,
+    inventoryDelay: 200,
     refresh:function(){
         if (keyboard.keyDown(controllsKey.up)) {
             controlls.up = true;
@@ -24,6 +28,17 @@ let controlls = {
         if (keyboard.keyDown(controllsKey.dash)) {
             controlls.dash = true;
         }
+        if (keyboard.keyDown(controllsKey.inventory)) {
+            const currentTime = Date.now();
+            if (!controlls.inventoryPressed && 
+                currentTime - controlls.lastInventoryPress > controlls.inventoryDelay) {
+                controlls.inventoryOpen = !controlls.inventoryOpen;
+                controlls.lastInventoryPress = currentTime;
+                controlls.inventoryPressed = true;
+            }
+        } else {
+            controlls.inventoryPressed = false;
+        }
     },
     restart:function(){
         controlls.up = false;
@@ -31,6 +46,7 @@ let controlls = {
         controlls.down = false;
         controlls.left = false;
         controlls.dash = false;
+        controlls.inventoryPressed = false;
     }
 }
 
