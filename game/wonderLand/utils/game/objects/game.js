@@ -49,13 +49,6 @@ class Game {
 
         this.inventory = new Inventory();
 
-        this.projectiles = [];
-        this.lastProjectileTime = 0;
-        this.projectileCooldown = 500;
-        this.bowCharge = 0;
-        this.bowCharging = false;
-        this.maxBowCharge = 1000;
-
         // Inicializar el arco
         this.bow = new Bow();
 
@@ -75,21 +68,14 @@ class Game {
         this.canvas.addEventListener('mousedown', (e) => {
             if (e.button === 0 && 
                 this.inventory.selectedItem && 
-                this.inventory.selectedItem.type === "test" &&
-                Date.now() - this.lastProjectileTime >= this.projectileCooldown) {
-                
-                this.bowCharging = true;
-                this.bowCharge = 0;
-                this.chargeStartTime = Date.now();
+                this.inventory.selectedItem.type === "test") {
+                this.bow.startCharging();
             }
         });
 
         // Agregar evento mouseup
         this.canvas.addEventListener('mouseup', (e) => {
-            if (e.button === 0 && this.bowCharging) {
-                const chargeTime = Date.now() - this.chargeStartTime;
-                this.bowCharge = Math.min(chargeTime, this.maxBowCharge);
-                
+            if (e.button === 0 && this.bow.charging) {
                 const { offsetX, offsetY } = this.camera.getOffset();
                 const playerCenterX = contextThisGame.player.x + contextThisGame.player.width / 2;
                 const playerCenterY = contextThisGame.player.y + contextThisGame.player.height / 2;
@@ -97,25 +83,20 @@ class Game {
                 const mouseWorldX = e.clientX + offsetX;
                 const mouseWorldY = e.clientY + offsetY;
                 
-                // Calcular potencia y gravedad basada en la carga
-                const chargeRatio = this.bowCharge / this.maxBowCharge;
-                const power = 15 + chargeRatio * 20; // Entre 15 y 35
-                const gravity = 1.5 - chargeRatio * 1.3; // Entre 1.5 y 0.2
-                
-                const projectile = new Projectile(
+                const projectile = this.bow.releaseCharge(
                     playerCenterX,
                     playerCenterY,
                     mouseWorldX,
-                    mouseWorldY,
-                    power,
-                    gravity
+                    mouseWorldY
                 );
                 
-                this.projectiles.push(projectile);
-                this.lastProjectileTime = Date.now();
-                this.bowCharging = false;
+                if (projectile) {
+                    this.projectiles.push(projectile);
+                }
             }
         });
+
+        this.projectiles = [];
     }
 
     createEnemies(positions) {
@@ -359,9 +340,9 @@ class Game {
         this.updateCamera(mouseControlls.getPosMouse());
 
         // Actualizar el frame del arco si está cargando
-        if (this.bowCharging) {
-            const chargeTime = Date.now() - this.chargeStartTime;
-            const chargeRatio = Math.min(chargeTime, this.maxBowCharge) / this.maxBowCharge;
+        if (this.bow.charging) {
+            const chargeTime = Date.now() - this.bow.chargeStartTime;
+            const chargeRatio = Math.min(chargeTime, this.bow.maxCharge) / this.bow.maxCharge;
             this.bow.updateFrame(chargeRatio);
         } else {
             this.bow.updateFrame(0);
@@ -376,7 +357,7 @@ class Game {
             for (let enemy of this.enemies) {
                 if (projectile.checkEnemyCollision(enemy)) {
                     if (enemy.stats && enemy.stats.heal > 0) {
-                        enemy.stats.heal -= 2;
+                        enemy.stats.heal -= 5;
                         if (enemy.stats.heal <= 0) {
                             this.enemies = this.enemies.filter(e => e !== enemy);
                         }
@@ -391,16 +372,7 @@ class Game {
     }
 
     drawProjectiles(offsetX, offsetY) {
-        const visibleArea = this.camera.getVisibleArea();
-        
-        this.projectiles.forEach(projectile => {
-            if (projectile.x + projectile.size > visibleArea.left &&
-                projectile.x - projectile.size < visibleArea.right &&
-                projectile.y + projectile.size > visibleArea.top &&
-                projectile.y - projectile.size < visibleArea.bottom) {
-                projectile.draw(this.context, offsetX, offsetY);
-            }
-        });
+        Projectile.drawProjectiles(this.projectiles, this.context, offsetX, offsetY, this.camera.getVisibleArea());
     }
 
     drawSelectedItem(offsetX, offsetY) {

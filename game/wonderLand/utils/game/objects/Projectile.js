@@ -138,12 +138,59 @@ class Projectile {
     }
 
     checkEnemyCollision(enemy) {
-        return (
-            this.x + this.size > enemy.x &&
-            this.x - this.size < enemy.x + enemy.width &&
-            this.y + this.size > enemy.y &&
-            this.y - this.size < enemy.y + enemy.height
-        );
+        // Verificar si el proyectil está explotando
+        if (this.exploding) return false;
+
+        // Calcular el centro del proyectil
+        const projectileCenterX = this.x;
+        const projectileCenterY = this.y;
+
+        // Calcular el centro del enemigo
+        const enemyCenterX = enemy.x + enemy.width / 2;
+        const enemyCenterY = enemy.y + enemy.height / 2;
+
+        // Calcular la distancia entre los centros
+        const dx = projectileCenterX - enemyCenterX;
+        const dy = projectileCenterY - enemyCenterY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Definir el radio de colisión (puedes ajustar este valor)
+        const collisionRadius = (enemy.width + enemy.height) / 4;
+
+        // Retornar true si hay colisión
+        return distance < collisionRadius;
+    }
+
+    static updateProjectiles(projectiles, enemies, visibleEntities) {
+        return projectiles.filter(projectile => {
+            projectile.update(visibleEntities);
+            
+            for (let enemy of enemies) {
+                if (projectile.checkEnemyCollision(enemy)) {
+                    if (enemy.stats && enemy.stats.heal > 0) {
+                        enemy.stats.heal -= 2;
+                        if (enemy.stats.heal <= 0) {
+                            enemies = enemies.filter(e => e !== enemy);
+                        }
+                    }
+                    projectile.createExplosion();
+                    return true;
+                }
+            }
+            
+            return projectile.active;
+        });
+    }
+
+    static drawProjectiles(projectiles, context, offsetX, offsetY, visibleArea) {
+        projectiles.forEach(projectile => {
+            if (projectile.x + projectile.size > visibleArea.left &&
+                projectile.x - projectile.size < visibleArea.right &&
+                projectile.y + projectile.size > visibleArea.top &&
+                projectile.y - projectile.size < visibleArea.bottom) {
+                projectile.draw(context, offsetX, offsetY);
+            }
+        });
     }
 }
 
