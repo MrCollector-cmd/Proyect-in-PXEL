@@ -47,13 +47,14 @@ class Game {
             { x: size.tils * 45, y: size.tils * 10 }
         ]);
 
+        //crear el inventario
         this.inventory = new Inventory();
 
         // Inicializar el arco
         this.bow = new Bow();
 
         // Añadir imágenes del arco
-        this.bowImages = {
+        this.bowImages = {  
             frame1: new Image(),
             frame2: new Image(),
             frame3: new Image()
@@ -62,6 +63,7 @@ class Game {
         this.bowImages.frame2.src = 'src/weapons/BowFrame2.png';
         this.bowImages.frame3.src = 'src/weapons/BowFrame3.png';
         
+        //inicializar el arco
         this.currentBowFrame = this.bowImages.frame1;
 
         // Modificar el evento mousedown
@@ -76,10 +78,11 @@ class Game {
         // Agregar evento mouseup
         this.canvas.addEventListener('mouseup', (e) => {
             if (e.button === 0 && this.bow.charging) {
-                const { offsetX, offsetY } = this.camera.getOffset();
-                const playerCenterX = contextThisGame.player.x + contextThisGame.player.width / 2;
-                const playerCenterY = contextThisGame.player.y + contextThisGame.player.height / 2;
+                const { offsetX, offsetY } = this.camera.getOffset();   //obtener la posicion de la camara
+                const playerCenterX = contextThisGame.player.x + contextThisGame.player.width / 2;  //obtener la posicion del jugador
+                const playerCenterY = contextThisGame.player.y + contextThisGame.player.height / 2; //obtener la posicion del jugador
                 
+                //obtener la posicion del mouse en el mundo
                 const mouseWorldX = e.clientX + offsetX;
                 const mouseWorldY = e.clientY + offsetY;
                 
@@ -349,6 +352,7 @@ class Game {
         }
     }
 
+    //actualiza los proyectiles
     updateProjectiles() {
         this.projectiles = this.projectiles.filter(projectile => {
             projectile.update(this.visibleEntitiesFirstLayer);
@@ -357,30 +361,33 @@ class Game {
             for (let enemy of this.enemies) {
                 if (projectile.checkEnemyCollision(enemy)) {
                     if (enemy.stats && enemy.stats.heal > 0) {
-                        enemy.stats.heal -= 5;
+                        enemy.stats.heal -= 5;  //restar vida al enemigo
                         if (enemy.stats.heal <= 0) {
                             this.enemies = this.enemies.filter(e => e !== enemy);
                         }
                     }
-                    projectile.createExplosion();
+                    projectile.createExplosion(); //crear la explosion
                     return true;
                 }
             }
             
-            return projectile.active;
+            return projectile.active; //retorna true si el proyectil esta activo
         });
     }
 
+    //dibuja los proyectiles
     drawProjectiles(offsetX, offsetY) {
-        Projectile.drawProjectiles(this.projectiles, this.context, offsetX, offsetY, this.camera.getVisibleArea());
+        Projectile.drawProjectiles(this.projectiles, this.context, offsetX, offsetY, this.camera.getVisibleArea()); 
     }
 
+    //dibuja el item seleccionado en la mano
     drawSelectedItem(offsetX, offsetY) {
-        if (this.inventory.selectedItem && this.inventory.selectedItem.type === "test") {
+        if (this.inventory.selectedItem && this.inventory.selectedItem.type === "test") {   //verifica si el item seleccionado es el arco
             const player = contextThisGame.player;
             const playerCenterX = player.x + player.width/2;
             const playerCenterY = player.y + player.height/2;
             
+            //dibuja el arco en la mano del jugador
             this.bow.drawInHand(
                 this.context,
                 playerCenterX,
