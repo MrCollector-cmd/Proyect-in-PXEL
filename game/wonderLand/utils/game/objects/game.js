@@ -21,7 +21,7 @@ class Game {
         this.background =new Image()
         this.background.src = 'src/terrain/background/Background1.png'
         contextThisGame.readBiome(1);
-
+        this.enemiesCreated = false;
         this.map = new Map(contextThisGame.sizeInchuncks); // Inicializamos el mapa
 
         // Cargar al jugador
@@ -38,14 +38,6 @@ class Game {
         this.visibleEntitiesSecondLayer = []
         // Inicializar enemigos
         this.enemies = [];
-        
-        // Crear múltiples enemigos en diferentes posiciones
-        this.createEnemies([
-            { x: size.tils * 15, y: size.tils * 10 },
-            { x: size.tils * 25, y: size.tils * 10 },
-            { x: size.tils * 35, y: size.tils * 10 },
-            { x: size.tils * 45, y: size.tils * 10 }
-        ]);
 
         //crear el inventario
         this.inventory = new Inventory();
@@ -106,7 +98,7 @@ class Game {
         positions.forEach(pos => {
             const enemy = new BasicEnemy(
                 pos.x, 
-                pos.y, 
+                pos.y - 1 * size.tils, 
                 size.tils, 
                 size.tils, 
                 'src/terrain/swamp/enemy/slime.png', 
@@ -159,7 +151,7 @@ class Game {
             contextThisGame.player.mapObjects = this.map.map.index1;
         }
 
-        if (!this.map.maxChunksCreated) {
+        if (this.map.currentChunkIndex < this.map.maxChunks - 2) {
             this.map.advanceChunk();
             contextThisGame.player.mapObjects = this.map.map.index1;
             this.map.map.index2 = readPatrons.createEntitiesFromCenterPositions(this.map.map.index1, 10)
@@ -167,6 +159,16 @@ class Game {
                 ...readPatrons.createEntitiesFromRandomPositions(this.map.map.index1,null,"index1")
             );
             this.map.map.index4 = readPatrons.createEntitiesFromRandomPositions(this.map.map.index1)
+        }else{
+            this.map.ending()
+            this.map.maxChunksCreated = true;
+        }
+
+        if(this.map.maxChunksCreated && !this.enemiesCreated){
+            let res = readPatrons.getForwardRandomPositions(this.map.map.index1, 10)
+            // Crear múltiples enemigos en diferentes posiciones
+            this.createEnemies(res);
+            this.map.map.index5=readPatrons.createIluminations(this.map.map.index1)
         }
     }
 
@@ -175,7 +177,7 @@ class Game {
 
         // Almacenar entidades visibles
         this.visibleEntitiesFirstLayer = [];
-        const invertedObj = Object.keys(this.map.map).reverse();
+        const invertedObj = ['index1','index2'].reverse();
         for (const indexDraw of invertedObj) {
             if (this.map.map[indexDraw] !== null && indexDraw !== 'index3') {
                 this.map.map[indexDraw].forEach(entity => {
@@ -200,19 +202,21 @@ class Game {
 
         // Almacenar entidades visibles
         this.visibleEntitiesSecondLayer = [];
-
-        if (this.map.map.index4 !== null ) {
-            this.map.map.index4.forEach(entity => {
-                if (
-                    entity.x + entity.width > visibleArea.left - 100&&
-                    entity.x < visibleArea.right + 100 &&
-                    entity.y + entity.height > visibleArea.top &&
-                    entity.y < visibleArea.bottom
-                ) {
-                    this.visibleEntitiesSecondLayer.push(entity); // Almacenamos las entidades visibles
-                }
-            });
-        }
+        let index = ['index4', 'index5']
+        index.forEach(i=>{
+            if (this.map.map[i] !== null ) {
+                this.map.map[i].forEach(entity => {
+                    if (
+                        entity.x + entity.width > visibleArea.left - 100&&
+                        entity.x < visibleArea.right + 100 &&
+                        entity.y + entity.height > visibleArea.top&&
+                        entity.y < visibleArea.bottom
+                    ) {
+                        this.visibleEntitiesSecondLayer.push(entity); // Almacenamos las entidades visibles
+                    }
+                });
+            }
+        })
 
         this.visibleEntitiesSecondLayer.forEach(entity => {
             entity.draw(this.context, offsetX, offsetY);
@@ -272,6 +276,7 @@ class Game {
 
         // Crea partículas
         particles.animate(this.context, this.canvas, offsetX,offsetY); 
+
         // Dibujar el mapa y jugador
         this.drawMapFirstLayer(offsetX, offsetY);
         this.drawEnemies(offsetX, offsetY);
@@ -287,14 +292,10 @@ class Game {
         
         // dibuja una segunda capa
         this.drawMapSecondLayer(offsetX,offsetY)
-
-        // Dibujar una capa de filtro
-        // filters.color;
-        // filters.createAndDrawFilter(this.context);
         
         //dibuja el agua
         this.drawWater(offsetX,offsetY)
-        console.log(this.visibleEntitiesFirstLayer, this.visibleEntitiesSecondLayer)
+
         // Crea partículas
         particles.animate(this.context, this.canvas, offsetX,offsetY); 
 

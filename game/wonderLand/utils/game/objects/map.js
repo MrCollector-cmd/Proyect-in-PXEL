@@ -3,7 +3,7 @@ import { size } from "../../configs/size.js";
 import { platforms } from "../../configs/patrons/patronsPlatforms.js";
 import { readPatrons } from "../read/readPatrons.js";
 function Map(m) {
-    readPatrons.patrons = platforms;
+    readPatrons.patronsMid = platforms;
     this.height = size.getTilesHeight();
     this.chunkSize = 20;
     this.currentChunkIndex = 0;
@@ -14,6 +14,7 @@ function Map(m) {
         index2: null,
         index3:null,
         index4:null,
+        index5:null,
     }; // Entidades actualmente en el mapa
     this.objectsInMap = []; // Inicialización de objectsInMap
     this.maxChunksCreated = false;
@@ -42,10 +43,10 @@ Map.prototype.createObjectsInMap = function(objects) {
 // Avanza al siguiente chunk
 Map.prototype.advanceChunk = function() {
     // Verificamos si hemos llegado al límite de los chunks que se pueden generar
-    if (this.currentChunkIndex >= this.maxChunks - 1) {
+    if (this.currentChunkIndex >= this.maxChunks - 2) {
         this.maxChunksCreated = true;
         return []; // No generar más chunks si ya hemos alcanzado el máximo
-    } else if (this.currentChunkIndex <= this.maxChunks - 1) {
+    } else if (this.currentChunkIndex <= this.maxChunks - 2) {
         // Incrementar el índice del chunk actual
         this.currentChunkIndex++;
 
@@ -61,6 +62,23 @@ Map.prototype.advanceChunk = function() {
 
         this.maxChunksCreated = false
     }
+};
+// termina el ultimo chunk
+Map.prototype.ending = function() {
+    if (this.map.length < this.maxChunks) {
+        return this.map.index1; // Si ya está inicializado, no generar más
+    }
+    console.log("creando ultimo chunk...", this.currentChunkIndex)
+    // Incrementar el índice del chunk actual
+    this.currentChunkIndex++;
+    // Generar el siguiente chunk usando los patrones
+    readPatrons.locatePoints(this.currentChunkIndex, 'index1',{patronEnd:"patronOne"});
+    const objects = readPatrons.dataMap;
+     // Dibujar los objetos generados en el nuevo chunk
+    this.createObjectsInMap(objects);
+
+    this.maxChunksCreated = true
+    return this.map; // Devuelve las entidades iniciales
 };
 
 // Inicializa el primer chunk

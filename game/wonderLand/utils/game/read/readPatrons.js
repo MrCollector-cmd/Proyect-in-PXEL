@@ -1,42 +1,39 @@
 import { size } from "../../configs/size.js";
 import { Entity } from "../objects/rect.js";
+import { platformsIni } from "../../configs/patrons/patronsPlatformsInit.js";
+import { platformsEnd } from "../../configs/patrons/patronsPlatformsEnd.js";
 const readPatrons = {
-    patrons: null,
+    patronsMid: null,
+    patronsEnd: platformsEnd,
+    patronStart:platformsIni,
     chunkSize: 20,
     dataMap: [],
     treePrime: true,
     // Selecciona un patrón aleatorio
-    getRandomPatron: function () {
-        const keys = Object.keys(readPatrons.patrons);
+    getRandomPatron: function (patrons) {
+        const keys = Object.keys(patrons);
         const randomIndex = Math.floor(Math.random() * keys.length);
-        return readPatrons.patrons[keys[randomIndex]];
+        return patrons[keys[randomIndex]];
     },
     // Genera datos de posición para cada rectángulo
-    locatePoints: function (chunkIndex, index, patronsEndAndStart) {
+    locatePoints: function (chunkIndex, index, patronsEndOrStart) {
         const offsetX = chunkIndex * readPatrons.chunkSize * size.tils;
     
         // Si se pasa patronName, buscamos el patrón correspondiente
-        const pattern = patronsEndAndStart.patronStart ? readPatrons.patrons[patronsEndAndStart.patronStart] : readPatrons.getRandomPatron();
-    
+        const pattern = patronsEndOrStart.patronStart
+            ? readPatrons.getRandomPatron(readPatrons.patronStart)
+            : patronsEndOrStart.patronEnd
+            ? readPatrons.getRandomPatron(readPatrons.patronsEnd)
+            : readPatrons.getRandomPatron(readPatrons.patronsMid);
+                
         if (!pattern) {
-            console.error(`Patrón no encontrado: ${patronsEndAndStart.patronStart}`);
+            console.error(`Patrón no encontrado: ${patronsEndOrStart.patronStart}`);
             return; // Si no se encuentra el patrón, salimos de la función
         }
     
         const objects = [];
         const processed = new Set();  // Usamos un Set para marcar las celdas procesadas
-    
-        // Si endPatronName está definido, buscamos el patrón final
-        let endPattern = null;
-        if (patronsEndAndStart.patronEnd!== undefined) {
-            endPattern = readPatrons.patrons[patronsEndAndStart.patronEnd];
-            console.log(endPattern)
-            if (!endPattern) {
-                console.error(`Patrón final no encontrado: ${patronsEndAndStart.patronEnd}`);
-                return; // Si no se encuentra el patrón final, salimos
-            }
-        }
-    
+
         for (let y = 0; y < pattern.length; y++) {
             for (let x = 0; x < pattern[0].length; x++) {
                 const cell = pattern[y][x];
@@ -96,16 +93,6 @@ const readPatrons = {
                     repeatTexture = true;
                     notHeigt = true;
                     id = 5;
-                }else if(cell === 6 && !readPatrons.treePrime){
-                    objectType = "notColl";
-                    texture = "src/obstacle/tree.png";
-                    repeatTexture = false;
-                    width += 1500
-                    height += 2500
-                    rectY -= 1900
-                    rectX -= 900
-                    id = 6;
-                    this.treePrime = true
                 }
     
                 if (!notHeigt) {
@@ -136,57 +123,8 @@ const readPatrons = {
             }
         }
     
-        // Si se especificó un patrón final, lo agregamos al final del mapa
-        if (patronsEndAndStart.patronEnd) {
-            for (let y = 0; y < endPattern.length; y++) {
-                for (let x = 0; x < endPattern[0].length; x++) {
-                    const cell = endPattern[y][x];
-                    if (cell === 0) continue;
-    
-                    let rectX = x * size.tils + offsetX;
-                    let rectY = (pattern.length + y) * size.tils;
-                    let width = size.tils;
-                    let height = size.tils;
-    
-                    let objectType = "solid";
-                    let texture = "src/terrain/terrainPlatform.png";
-                    let repeatTexture = true;
-                    let id = 1;
-    
-                    if (cell === 3) {
-                        objectType = "solid";
-                        texture = "src/terrain/terrainPlatform.png";
-                        repeatTexture = true;
-                        id = 3;
-                    } else if (cell === 4) {
-                        objectType = "solid";
-                        texture = "src/terrain/terrain.png";
-                        repeatTexture = true;
-                        id = 4;
-                    } else if (cell === 5) {
-                        objectType = "solid";
-                        texture = "src/terrain/swamp/tarrain/waterBackground.png";
-                        repeatTexture = true;
-                        id = 5;
-                    }
-    
-                    objects.push({
-                        x: rectX,
-                        y: rectY,
-                        width,
-                        height,
-                        type: objectType,
-                        texture,
-                        repeatTexture,
-                        id: id
-                    });
-                }
-            }
-        }
-    
         readPatrons.dataMap = [objects, index];
     }
-    
     ,/// posicion pres
     getPositionsWithIdOne: function(map) {
         const positions = [];
@@ -208,6 +146,44 @@ const readPatrons = {
     
         return positions; // Devuelve las posiciones de todos los tiles omitidos
     },
+    getForwardRandomPositions: function (map, count = 5) {
+        if (!map) return console.warn("No se ha pasado ningún mapa para la creación de enemigos");
+    
+        // Obtener todas las posiciones con id 1
+        const positions = this.getPositionsWithIdOne(map);
+        if (!positions.length) return console.warn("No hay posiciones válidas para seleccionar");
+    
+        const result = [];
+        const usedPositions = new Set(); // Registro de posiciones ya usadas
+        const minSeparation = 4 * size.tils; // Separación mínima entre posiciones
+        let lastX = -Infinity; // Última posición X válida
+    
+        while (result.length < count) {
+            // Filtrar posiciones válidas hacia adelante y no utilizadas
+            const availablePositions = positions.filter(
+                pos => pos.x > lastX + minSeparation && !usedPositions.has(pos)
+            );
+    
+            // Si no hay posiciones válidas, reiniciar y buscar entre las no utilizadas
+            if (!availablePositions.length) {
+                lastX = -Infinity; // Reiniciar la posición
+                continue; // Volver a filtrar con las posiciones restantes
+            }
+    
+            // Seleccionar una posición aleatoria entre las disponibles
+            const randomIndex = Math.floor(Math.random() * availablePositions.length);
+            const selectedPosition = availablePositions[randomIndex];
+    
+            // Guardar la posición seleccionada
+            result.push(selectedPosition);
+            usedPositions.add(selectedPosition); // Marcar la posición como utilizada
+            lastX = selectedPosition.x; // Actualizar la última posición X
+        }
+    
+        return result;
+    }
+    
+    ,
     getCenterPositions: function (map, numPositions) {
         const positions = [];
     
@@ -387,7 +363,7 @@ const readPatrons = {
                 pos.centerY - 230,     // Posición Y central
                 200,              // Ancho de la entidad (ejemplo, puedes ajustarlo)
                 200,              // Alto de la entidad (ejemplo, puedes ajustarlo)
-                "src/terrain/swamp/mushrooms.png",// 'src/obstacle/tree.png',   // Textura por defecto (ajústala si lo necesitas)
+                "src/terrain/swamp/decor/mushrooms.png",// 'src/obstacle/tree.png',   // Textura por defecto (ajústala si lo necesitas)
                 'notColl',         // Tipo de entidad
                 false,           // repeatTexture (por defecto)
                 17    // ID aleatorio o puedes generar uno específico
@@ -398,6 +374,45 @@ const readPatrons = {
         });
     
         return entities; // Devuelve el array con las nuevas entidades
+    },
+    createIluminations: function (map) {
+        const entities = [];
+    
+        // Obtener posiciones de adelante usando la función getForwardRandomPositions
+        const forwardPositions = this.getForwardRandomPositions(map);
+    
+        forwardPositions.forEach(pos => {
+            // Crear la primera entidad en la posición obtenida
+            const entity1 = new Entity(
+                pos.x,  // Posición X central
+                pos.y - 100,  // Posición Y central
+                20,          // Ancho de la entidad
+                100,          // Alto de la entidad
+                "src/terrain/swamp/decor/ilumination/mushBottom.png", // Textura
+                'notColl',    // Tipo de entidad
+                false,        // repeatTexture
+                18            // ID aleatorio o específico
+            );
+    
+            // Crear la segunda entidad en la misma posición, pero ajustando la coordenada Y
+            const entity2 = new Entity(
+                pos.x - 13,  // Misma posición X
+                pos.y - entity1.height - 35, // Posición Y ajustada hacia abajo
+                40,          // Ancho de la entidad
+                40,          // Alto de la entidad
+                "src/terrain/swamp/decor/ilumination/mushTop.png", // Textura
+                'solid',    // Tipo de entidad
+                false,        // repeatTexture
+                19,            // ID aleatorio o específico (diferente al de la primera)
+                undefined,
+                true ///brillo
+            );
+    
+            // Agregar las dos entidades al array
+            entities.push(entity1, entity2);
+        });
+    
+        return entities; // Devuelve el array con las entidades creadas
     },
 }
 export { readPatrons };
