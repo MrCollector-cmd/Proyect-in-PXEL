@@ -3,6 +3,7 @@ const controllsKey = {
     down:'s',
     left:'a',
     right:'d',
-    dash: 'e'
+    dash: 'e',
+    inventory: 'i'
 }
 export {controllsKey}
