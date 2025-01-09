@@ -9,6 +9,10 @@ import { readPatrons } from "../read/readPatrons.js";
 import { particles } from "../stetics/particles.js";
 import { controlls } from "../controlls/controlls.js";
 import { BasicEnemy } from "./enemies/BasicEnemy.js";
+import { Inventory } from "./Inventory.js";
+import { Projectile } from "./Projectile.js";
+import { Bow } from "./weapons/Bow.js";
+
 class Game {
     constructor() {
         this.canvas = document.getElementById('gameWorld');
@@ -34,6 +38,59 @@ class Game {
         this.visibleEntitiesSecondLayer = []
         // Inicializar enemigos
         this.enemies = [];
+        
+        // Crear múltiples enemigos en diferentes posiciones
+        this.createEnemies([
+            { x: size.tils * 15, y: size.tils * 10 },
+            { x: size.tils * 25, y: size.tils * 10 },
+            { x: size.tils * 35, y: size.tils * 10 },
+            { x: size.tils * 45, y: size.tils * 10 }
+        ]);
+
+        //crear el inventario
+        this.inventory = new Inventory();
+
+        // Inicializar el arco
+        this.bow = new Bow();
+
+        // Modificar el evento mousedown
+        this.canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 0 && 
+                this.inventory.selectedItem && 
+                this.inventory.selectedItem.type === "test") {
+                this.bow.startCharging();
+            }
+        });
+
+        // Agregar evento mouseup
+        this.canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 0 && this.bow.charging) {
+                const { offsetX, offsetY } = this.camera.getOffset();
+                const player = contextThisGame.player;
+                
+                // Obtener la posición del arco
+                const bowPosition = this.bow.getBowPosition(
+                    player.x + player.width/2,
+                    player.y + player.height/2
+                );
+                
+                const mouseWorldX = e.clientX + offsetX;
+                const mouseWorldY = e.clientY + offsetY;
+                
+                const projectile = this.bow.releaseCharge(
+                    bowPosition.x,
+                    bowPosition.y,
+                    mouseWorldX,
+                    mouseWorldY
+                );
+                
+                if (projectile) {
+                    this.projectiles.push(projectile);
+                }
+            }
+        });
+
+        this.projectiles = [];
     }
 
     createEnemies(positions) {
@@ -57,17 +114,15 @@ class Game {
 
 
         this.enemies.forEach(enemy => {
-            //verifica si el enemigo esta en la pantalla
+            enemy.view = false;
             if (enemy.x + enemy.width > visibleArea.left - 100 &&
                 enemy.x < visibleArea.right +100 &&
                 enemy.y + enemy.height > visibleArea.top &&
                 enemy.y < visibleArea.bottom - 200) {
-                // Agregamos el enemigo a las entidades visibles
                 this.visibleEntitiesFirstLayer.push(enemy);
-                enemy.view = true
-                enemy.update(this.visibleEntitiesFirstLayer)
+                enemy.view = true;
+                enemy.update(this.visibleEntitiesFirstLayer);
             }
-            enemy.view = false
         });
     }
 
@@ -187,16 +242,18 @@ class Game {
 
         // Almacenar entidades visibles
 
-        this.map.map.index3.forEach(entity => {
-            if (
-                entity.x + entity.width > visibleArea.left -200 &&
-                entity.x < visibleArea.right +200 &&
-                entity.y + entity.height > visibleArea.top &&
-                entity.y < visibleArea.bottom
-            ) {
-                this.visibleEntitiesFirstLayer.push(entity); // Almacenamos las entidades visibles
-            }
-        });
+        if (this.map.map.index3) {
+            this.map.map.index3.forEach(entity => {
+                if (
+                    entity.x + entity.width > visibleArea.left -200 &&
+                    entity.x < visibleArea.right +200 &&
+                    entity.y + entity.height > visibleArea.top &&
+                    entity.y < visibleArea.bottom
+                ) {
+                    this.visibleEntitiesFirstLayer.push(entity); // Almacenamos las entidades visibles
+                }
+            });
+        }
 
         this.visibleEntitiesFirstLayer.forEach(entity => {
             if (entity.id === 6) {
@@ -209,7 +266,7 @@ class Game {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
-    draw() {
+    draw(timestamp) {
         // Obtiene los offsets de la cámara
         const { offsetX, offsetY } = this.camera.getOffset();
 
@@ -229,6 +286,8 @@ class Game {
 
         //dibuja al jugador
         contextThisGame.player.draw(this.context, offsetX, offsetY);
+        this.drawSelectedItem(offsetX, offsetY);
+
         
         // dibuja una segunda capa
         this.drawMapSecondLayer(offsetX,offsetY)
@@ -242,6 +301,19 @@ class Game {
         // sombras de la pantalla
         filters.drawBackground(this.context,'shadowsX')
 
+        // Dibujar el inventario si está abierto
+        if (controlls.inventoryOpen) {
+            this.inventory.isOpen = true;
+            this.inventory.draw(this.context);
+        } else {
+            this.inventory.isOpen = false;
+        }
+
+        // Dibujar el mouse al final para que siempre esté encima
+        mouseControlls.refreshMouseStyle();
+
+        // Dibujar proyectiles
+        this.drawProjectiles(offsetX, offsetY);
         //dibuja el mouse
         mouseControlls.refreshMouseStyle();
     }
@@ -255,7 +327,7 @@ class Game {
             let water = readPatrons.findEntitiesWithIdFiveAndWidths(this.map.map.index1)
             this.map.map.index3 = water
         }
-
+        this.updateEnemies()
         // comienzo de escucha de controles
         controlls.refresh();
         this.updateEnemies()
@@ -263,9 +335,67 @@ class Game {
         
         // fin de escucha y reseteo de controles
         controlls.restart();
-
+        
+        // Actualizar proyectiles
+        this.updateProjectiles();
+        
         // Actualiza la cámara para seguir al jugador
         this.updateCamera(mouseControlls.getPosMouse());
+
+        // Actualizar el frame del arco si está cargando
+        if (this.bow.charging) {
+            const chargeTime = Date.now() - this.bow.chargeStartTime;
+            const chargeRatio = Math.min(chargeTime, this.bow.maxCharge) / this.bow.maxCharge;
+            this.bow.updateFrame(chargeRatio);
+        } else {
+            this.bow.updateFrame(0);
+        }
+    }
+
+    //actualiza los proyectiles
+    updateProjectiles() {
+        this.projectiles = this.projectiles.filter(projectile => {
+            projectile.update(this.visibleEntitiesFirstLayer);
+            
+            // Verificar colisiones con enemigos
+            for (let enemy of this.enemies) {
+                if (projectile.checkEnemyCollision(enemy)) {
+                    if (enemy.stats && enemy.stats.heal > 0) {
+                        enemy.stats.heal -= 5;  //restar vida al enemigo
+                        if (enemy.stats.heal <= 0) {
+                            this.enemies = this.enemies.filter(e => e !== enemy);
+                        }
+                    }
+                    projectile.createExplosion(); //crear la explosion
+                    return true;
+                }
+            }
+            
+            return projectile.active; //retorna true si el proyectil esta activo
+        });
+    }
+
+    //dibuja los proyectiles
+    drawProjectiles(offsetX, offsetY) {
+        Projectile.drawProjectiles(this.projectiles, this.context, offsetX, offsetY, this.camera.getVisibleArea()); 
+    }
+
+    //dibuja el item seleccionado en la mano
+    drawSelectedItem(offsetX, offsetY) {
+        if (this.inventory.selectedItem && this.inventory.selectedItem.type === "test") {   //verifica si el item seleccionado es el arco
+            const player = contextThisGame.player;
+            const playerCenterX = player.x + player.width/2;
+            const playerCenterY = player.y + player.height/2;
+            
+            //dibuja el arco en la mano del jugador
+            this.bow.drawInHand(
+                this.context,
+                playerCenterX,
+                playerCenterY,
+                offsetX,
+                offsetY
+            );
+        }
     }
 }
 
