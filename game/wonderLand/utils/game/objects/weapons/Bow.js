@@ -66,11 +66,10 @@ class Bow {
     drawInHand(context, playerX, playerY, cameraOffsetX = 0, cameraOffsetY = 0) {
         if (!BowAssets.areImagesLoaded() || !this.currentFrame || !this.currentFrame.complete) return;
     
-        const handOffset = 15; // Distancia del arco al centro del jugador
+        const handOffset = 12; // Distancia del arco al centro del jugador
     
         try {
-            // Correccion para la posicion del arco
-            const correction = 12;
+            const correct = 12;
             // Obtener la posición del mouse usando mouseControlls
             const mousePos = mouseControlls.getPosMouse();
     
@@ -82,7 +81,7 @@ class Bow {
     
             // Calcular la posición del arco alrededor del jugador
             const bowX = playerX - cameraOffsetX + Math.cos(angle) * handOffset;
-            const bowY = playerY + correction - cameraOffsetY + Math.sin(angle) * handOffset;
+            const bowY = playerY + correct - cameraOffsetY + Math.sin(angle) * handOffset;
     
             // Calcular dimensiones
             const scale = this.handSize.height / this.currentFrame.height;
@@ -158,8 +157,8 @@ class Bow {
         const gravity = 1.5 - chargeRatio * 1.3;
         
         const projectile = new Projectile(
-            playerX - 10,
-            playerY ,
+            playerX + 12,
+            playerY,
             targetX,
             targetY,
             power,
