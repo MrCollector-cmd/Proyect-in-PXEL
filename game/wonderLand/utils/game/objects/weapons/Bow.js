@@ -1,6 +1,7 @@
 import { imagesController } from "../../../configs/imagesController.js";
 import { contextThisGame } from "../../objects/context.js";
 import { Projectile } from "../../objects/Projectile.js";
+import { mouseControlls } from "../../controlls/mouse.js";
 
 class Bow {
     constructor() {
@@ -13,7 +14,7 @@ class Bow {
         
         //tamaño de la arco en el inventario
         this.inventorySize = {
-            width: 25,
+            width: 25,              
             height: 55
         };
 
@@ -59,41 +60,40 @@ class Bow {
     drawInHand(context, x, y, offsetX, offsetY) {
         if (!this.currentFrame || !this.currentFrame.complete) return;
         
-        const playerDirection = contextThisGame.player.direction;
-        const handOffsetX = playerDirection ? -26 : 26; //offset x de la arco
-        const handOffsetY = 15; //offset y de la arco
+        const handOffsetX = 26;
+        const handOffsetY = 15;
         
         // Calcular dimensiones
-        const scale = this.handSize.height / this.currentFrame.height; //escala de la arco
-        let widthMultiplier = 1; //multiplicador de ancho de la arco
-        if (this.currentFrame === this.frames.frame2) widthMultiplier = 1.1; //si la arco es el frame 2
-        if (this.currentFrame === this.frames.frame3) widthMultiplier = 1.2; //si la arco es el frame 3
-        const scaledWidth = this.currentFrame.width * scale * widthMultiplier; //ancho de la arco
+        const scale = this.handSize.height / this.currentFrame.height;
+        let widthMultiplier = 1;
+        if (this.currentFrame === this.frames.frame2) widthMultiplier = 1.1;
+        if (this.currentFrame === this.frames.frame3) widthMultiplier = 1.2;
+        const scaledWidth = this.currentFrame.width * scale * widthMultiplier;
         
         context.save();
+
+        // Obtener la posición del mouse usando mouseControlls
+        const mousePos = mouseControlls.getPosMouse();
         
-        // Calcular posición base
-        let drawX;
-        if (playerDirection) {
-            // Mirando a la izquierda
-            drawX = x - offsetX - handOffsetX - scaledWidth;
-        } else {
-            // Mirando a la derecha
-            drawX = x - offsetX + handOffsetX - scaledWidth;
-        }
-        const drawY = y - offsetY + handOffsetY - (this.handSize.height / 2);
+        // Calcular el ángulo hacia el mouse
+        const angle = Math.atan2(
+            mousePos.posY - (y - offsetY),
+            mousePos.posX - (x - offsetX)
+        );
         
-        //si el jugador esta mirando a la izquierda
-        if (playerDirection) {
-            context.translate(x - offsetX, y - offsetY);
-            context.scale(-1, 1);
-            context.translate(-(x - offsetX), -(y - offsetY));
-        }
+        // Posición base del arco
+        const baseX = x - offsetX;
+        const baseY = y - offsetY + handOffsetY;
         
+        // Trasladar al punto de rotación y rotar
+        context.translate(baseX, baseY);
+        context.rotate(angle);
+        
+        // Dibujar el arco con origen ajustado
         context.drawImage(
             this.currentFrame,
-            drawX,
-            drawY,
+            -scaledWidth,
+            -this.handSize.height / 2,
             scaledWidth,
             this.handSize.height
         );

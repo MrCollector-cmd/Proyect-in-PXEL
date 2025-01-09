@@ -38,6 +38,14 @@ class Game {
         this.visibleEntitiesSecondLayer = []
         // Inicializar enemigos
         this.enemies = [];
+        
+        // Crear múltiples enemigos en diferentes posiciones
+        this.createEnemies([
+            { x: size.tils * 15, y: size.tils * 10 },
+            { x: size.tils * 25, y: size.tils * 10 },
+            { x: size.tils * 35, y: size.tils * 10 },
+            { x: size.tils * 45, y: size.tils * 10 }
+        ]);
 
         //crear el inventario
         this.inventory = new Inventory();
