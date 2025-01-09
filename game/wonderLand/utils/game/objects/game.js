@@ -53,19 +53,6 @@ class Game {
         // Inicializar el arco
         this.bow = new Bow();
 
-        // Añadir imágenes del arco
-        this.bowImages = {  
-            frame1: new Image(),
-            frame2: new Image(),
-            frame3: new Image()
-        };
-        this.bowImages.frame1.src = 'src/weapons/BowFrame1.png';
-        this.bowImages.frame2.src = 'src/weapons/BowFrame2.png';
-        this.bowImages.frame3.src = 'src/weapons/BowFrame3.png';
-        
-        //inicializar el arco
-        this.currentBowFrame = this.bowImages.frame1;
-
         // Modificar el evento mousedown
         this.canvas.addEventListener('mousedown', (e) => {
             if (e.button === 0 && 
@@ -78,17 +65,21 @@ class Game {
         // Agregar evento mouseup
         this.canvas.addEventListener('mouseup', (e) => {
             if (e.button === 0 && this.bow.charging) {
-                const { offsetX, offsetY } = this.camera.getOffset();   //obtener la posicion de la camara
-                const playerCenterX = contextThisGame.player.x + contextThisGame.player.width / 2;  //obtener la posicion del jugador
-                const playerCenterY = contextThisGame.player.y + contextThisGame.player.height / 2; //obtener la posicion del jugador
+                const { offsetX, offsetY } = this.camera.getOffset();
+                const player = contextThisGame.player;
                 
-                //obtener la posicion del mouse en el mundo
+                // Obtener la posición del arco
+                const bowPosition = this.bow.getBowPosition(
+                    player.x + player.width/2,
+                    player.y + player.height/2
+                );
+                
                 const mouseWorldX = e.clientX + offsetX;
                 const mouseWorldY = e.clientY + offsetY;
                 
                 const projectile = this.bow.releaseCharge(
-                    playerCenterX,
-                    playerCenterY,
+                    bowPosition.x,
+                    bowPosition.y,
                     mouseWorldX,
                     mouseWorldY
                 );
