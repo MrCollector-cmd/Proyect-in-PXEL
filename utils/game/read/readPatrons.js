@@ -94,6 +94,14 @@ const readPatrons = {
                     notHeigt = true;
                     id = 5;
                 }
+                else if (cell === 6) {
+                    objectType = "notColl";
+                    repeatTexture = false;
+                    texture = null
+                    notHeigt = true;
+                    id = 6;
+                }
+    
     
                 if (!notHeigt) {
                     // Añadimos el objeto al array de objetos
@@ -126,62 +134,90 @@ const readPatrons = {
         readPatrons.dataMap = [objects, index];
     }
     ,/// posicion pres
-    getPositionsWithIdOne: function(map) {
-        const positions = [];
-    
-        // Itera solo sobre las entidades con id 1
-        for (let entity of map) {
-            if (entity.id === 1) {
-                const tiles = entity.width / size.tils; // Asume que width es múltiplo de size.tils
-    
-                // Generar las posiciones de X para cada tile, omitiendo la primera y la última
-                for (let i = 1; i < tiles - 1; i++) {  // Comienza en 1 y termina en tiles - 1
-                    positions.push({
-                        x: entity.x + i * size.tils,  // Incrementa la posición X por cada tile
-                        y: entity.y                  // Mantén la misma posición Y
-                    });
-                }
+    getPositionsWithIdOne: function (map, ignore = false) {
+    const positions = [];
+    let ignoredFirst = false; // Flag para indicar si se ha ignorado la primera entidad
+
+    // Itera sobre las entidades del mapa
+    for (let entity of map) {
+        if (entity.id === 1) {
+            const tiles = entity.width / size.tils; // Asume que width es múltiplo de size.tils
+
+            // Si ignore es true, saltar la primera entidad con id === 1
+            if (ignore && !ignoredFirst) {
+                ignoredFirst = true; // Marca que la primera entidad ha sido ignorada
+                continue; // Salta la iteración de la primera entidad
+            }
+
+            // Generar las posiciones de X para cada tile, omitiendo la primera y la última
+            for (let i = 1; i < tiles - 1; i++) { // Comienza en 1 y termina en tiles - 1
+                positions.push({
+                    x: entity.x + i * size.tils,  // Incrementa la posición X por cada tile
+                    y: entity.y                  // Mantén la misma posición Y
+                });
             }
         }
-    
-        return positions; // Devuelve las posiciones de todos los tiles omitidos
-    },
-    getForwardRandomPositions: function (map, count = 5) {
-        if (!map) return console.warn("No se ha pasado ningún mapa para la creación de enemigos");
-    
-        // Obtener todas las posiciones con id 1
-        const positions = this.getPositionsWithIdOne(map);
-        if (!positions.length) return console.warn("No hay posiciones válidas para seleccionar");
-    
-        const result = [];
-        const usedPositions = new Set(); // Registro de posiciones ya usadas
-        const minSeparation = 4 * size.tils; // Separación mínima entre posiciones
-        let lastX = -Infinity; // Última posición X válida
-    
-        while (result.length < count) {
-            // Filtrar posiciones válidas hacia adelante y no utilizadas
-            const availablePositions = positions.filter(
-                pos => pos.x > lastX + minSeparation && !usedPositions.has(pos)
-            );
-    
-            // Si no hay posiciones válidas, reiniciar y buscar entre las no utilizadas
-            if (!availablePositions.length) {
-                lastX = -Infinity; // Reiniciar la posición
-                continue; // Volver a filtrar con las posiciones restantes
-            }
-    
-            // Seleccionar una posición aleatoria entre las disponibles
-            const randomIndex = Math.floor(Math.random() * availablePositions.length);
-            const selectedPosition = availablePositions[randomIndex];
-    
-            // Guardar la posición seleccionada
-            result.push(selectedPosition);
-            usedPositions.add(selectedPosition); // Marcar la posición como utilizada
-            lastX = selectedPosition.x; // Actualizar la última posición X
-        }
-    
-        return result;
     }
+
+    return positions; // Devuelve las posiciones de todos los tiles omitidos
+}
+,
+getForwardRandomPositions: function (map, count = 5) {
+    if (!map) return console.warn("No se ha pasado ningún mapa para la creación de enemigos");
+
+    // Obtener todas las posiciones con id 1
+    const positions = this.getPositionsWithIdOne(map, true);
+    if (!positions.length) return console.warn("No hay posiciones válidas para seleccionar");
+
+    const result = [];
+    const usedPositions = new Set(); // Registro de posiciones ya usadas
+    const minSeparation = 5 * size.tils; // Separación mínima entre posiciones
+    const startingPositionIndex = 7; // Empezar después de las primeras 7 posiciones
+    const availablePositions = positions.slice(startingPositionIndex); // Cortar las primeras 7 posiciones
+
+    let lastX = availablePositions[0].x - minSeparation; // Inicializar para garantizar que la primera posición está alejada
+
+    // Función para determinar si la distancia entre las posiciones es de 4 bloques con un 40% de probabilidad
+    const shouldBeAtFourBlocks = () => Math.random() < 0.15; // 40% de probabilidad
+
+    for (let i = 0; i < count; i++) {
+        let selectedPosition = null;
+        
+        if (i === 0) {
+            // Para el primer enemigo, seleccionar una posición aleatoria de las disponibles
+            selectedPosition = availablePositions[Math.floor(Math.random() * availablePositions.length)];
+        } else {
+            // Para los siguientes enemigos, debemos tener en cuenta la separación
+            let validPositions = availablePositions.filter(pos => !usedPositions.has(pos));
+
+            if (shouldBeAtFourBlocks()) {
+                // Si la probabilidad es 40%, el enemigo debe estar a 4 bloques de distancia
+                validPositions = validPositions.filter(pos => Math.abs(pos.x - lastX) === minSeparation);
+            } else {
+                // Si no, podemos permitir cualquier posición válida
+                validPositions = validPositions.filter(pos => Math.abs(pos.x - lastX) > minSeparation);
+            }
+
+            if (validPositions.length > 0) {
+                // Seleccionamos aleatoriamente entre las posiciones válidas
+                selectedPosition = validPositions[Math.floor(Math.random() * validPositions.length)];
+            } else {
+                // Si no hay posiciones válidas, reiniciar el proceso
+                console.warn("No hay suficientes posiciones válidas, reiniciando...");
+                i = -1;  // Reiniciar el ciclo
+                usedPositions.clear();  // Limpiar las posiciones utilizadas
+                continue;
+            }
+        }
+
+        result.push(selectedPosition);
+        usedPositions.add(selectedPosition); // Marcar la posición como utilizada
+        lastX = selectedPosition.x; // Actualizar la última posición X
+    }
+
+    return result;
+}
+
     
     ,
     getCenterPositions: function (map, numPositions) {

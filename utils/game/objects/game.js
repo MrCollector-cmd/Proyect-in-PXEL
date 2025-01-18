@@ -12,21 +12,25 @@ import { BasicEnemy } from "./enemies/BasicEnemy.js";
 import { Inventory } from "./Inventory.js";
 import { Projectile } from "./Projectile.js";
 import { Bow } from "./weapons/Bow.js";
-
+import { UI } from "./Ui/layerOfUi.js";
 class Game {
     constructor() {
         this.canvas = document.getElementById('gameWorld');
         this.updateCanvasSize();
         this.context = this.canvas.getContext('2d');
+        // Carga el fondo 
         this.background =new Image()
         this.background.src = 'src/terrain/background/Background1.png'
+        // Lee el bioma
         contextThisGame.readBiome(1);
+        // bandera de creacion de enemeigos
         this.enemiesCreated = false;
         this.map = new Map(contextThisGame.sizeInchuncks); // Inicializamos el mapa
 
         // Cargar al jugador
         this.loadPlayer(3*size.tils, size.tils * 12, size.tils, size.tils, "src/skins/skinD.png", "player", { heal: 10, damage: 10, dash:5});
-
+        UI.dataPlayer = contextThisGame.player
+        UI.getData();
         // Crear la cámara
         const cameraWidth = this.canvas.width - 100; // 100px más pequeña que el canvas
         const cameraHeight = this.canvas.height - 100; // Agrega margen extra a la altura
@@ -39,14 +43,6 @@ class Game {
         // Inicializar enemigos
         this.enemies = [];
         
-        // Crear múltiples enemigos en diferentes posiciones
-        this.createEnemies([
-            { x: size.tils * 15, y: size.tils * 10 },
-            { x: size.tils * 25, y: size.tils * 10 },
-            { x: size.tils * 35, y: size.tils * 10 },
-            { x: size.tils * 45, y: size.tils * 10 }
-        ]);
-
         //crear el inventario
         this.inventory = new Inventory();
 
@@ -164,7 +160,7 @@ class Game {
         }
 
         if(this.map.maxChunksCreated && !this.enemiesCreated){
-            let res = readPatrons.getForwardRandomPositions(this.map.map.index1, 10)
+            let res = readPatrons.getForwardRandomPositions(this.map.map.index1, 15)
             // Crear múltiples enemigos en diferentes posiciones
             this.createEnemies(res);
             this.map.map.index5=readPatrons.createIluminations(this.map.map.index1)
@@ -309,11 +305,12 @@ class Game {
             this.inventory.isOpen = false;
         }
 
-        // Dibujar el mouse al final para que siempre esté encima
-        mouseControlls.refreshMouseStyle();
-
         // Dibujar proyectiles
         this.drawProjectiles(offsetX, offsetY);
+
+        //Dibuja la UI
+        UI.drawUi(this.context, offsetX, offsetY)
+
         //dibuja el mouse
         mouseControlls.refreshMouseStyle();
     }
@@ -341,6 +338,8 @@ class Game {
         
         // Actualiza la cámara para seguir al jugador
         this.updateCamera(mouseControlls.getPosMouse());
+
+        UI.getData();
 
         // Actualizar el frame del arco si está cargando
         if (this.bow.charging) {

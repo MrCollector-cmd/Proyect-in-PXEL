@@ -138,21 +138,6 @@ class BasicEnemy extends Criature {
             const overlapBottom = player.y + player.height - this.y;
 
             const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
-
-            if (minOverlap === overlapLeft) {
-                player.x = this.x + this.width;
-                player.pCollLeft = true;
-            } else if (minOverlap === overlapRight) {
-                player.x = this.x - player.width;
-                player.pCollRight = true;
-            } else if (minOverlap === overlapTop) {
-                player.y = this.y + this.height;
-                player.pCollTop = true;
-            } else if (minOverlap === overlapBottom) {
-                player.y = this.y - player.height;
-                player.pCollButton = true;
-            }
-            
             //si el jugador tiene vida, le resta vida al jugador
             if (player.stats && player.stats.heal > 0) {
                 player.stats.heal -= this.stats.damage;

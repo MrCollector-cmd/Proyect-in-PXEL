@@ -1,9 +1,12 @@
 const controllsKey = {
-    up:'w' || 'space',
+    interact:'e',
+    esc: 'Escape',
+    up:'w',
+    upSec:'Space',
     down:'s',
     left:'a',
     right:'d',
-    dash: 'e',
+    dash: 'f',
     inventory: 'i'
 }
 export {controllsKey}

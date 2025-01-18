@@ -13,7 +13,7 @@ let controlls = {
     lastInventoryPress: 0,
     inventoryDelay: 200,
     refresh:function(){
-        if (keyboard.keyDown(controllsKey.up)) {
+        if (keyboard.keyDown(controllsKey.up) || keyboard.keyDown(controllsKey.upSec) ) {
             controlls.up = true;
         }
         if (keyboard.keyDown(controllsKey.down)) {
@@ -28,7 +28,7 @@ let controlls = {
         if (keyboard.keyDown(controllsKey.dash)) {
             controlls.dash = true;
         }
-        if (keyboard.keyDown(controllsKey.inventory)) {
+        if (keyboard.keyDown(controllsKey.inventory) || keyboard.keyDown(controllsKey.esc)) {
             const currentTime = Date.now();
             if (!controlls.inventoryPressed && 
                 currentTime - controlls.lastInventoryPress > controlls.inventoryDelay) {
@@ -38,6 +38,9 @@ let controlls = {
             }
         } else {
             controlls.inventoryPressed = false;
+        }
+        if (keyboard.keyDown(controllsKey.interact)) {
+            console.log('Interact')
         }
     },
     restart:function(){
