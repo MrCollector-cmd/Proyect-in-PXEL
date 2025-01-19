@@ -16,7 +16,6 @@ function Map(m) {
         index4:null,
         index5:null,
     }; // Entidades actualmente en el mapa
-    this.objectsInMap = []; // Inicialización de objectsInMap
     this.maxChunksCreated = false;
 }
 

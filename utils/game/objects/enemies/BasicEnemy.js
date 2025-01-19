@@ -2,53 +2,51 @@ import { Criature } from "../rect.js";
 import { contextThisGame } from "../context.js";
 
 class BasicEnemy extends Criature {
-    //BasicEnemy es un enemigo que se mueve en una dirección y salta cada 5 segundos si está en el suelo
     constructor(x, y, width, height, img, type, stats) {
         super(x, y, width, height, img, type, stats);
         this.initializeProperties();
     }
 
     initializeProperties() {
-        this.lastJumpTime = Date.now();//tiempo en el que se saltó por ultima vez
-        this.pCollButton = true;//si esta en el suelo
-        this.isJumping = false;//si esta saltando
-        this.view = false
-        this.velocityY = 0;//velocidad en el eje y
-        this.velocityX = 0;//velocidad en el eje x
-        this.moveSpeed = 5;//velocidad de movimiento
-        this.direction = 1;//direccion de movimiento
-        this.GRAVITY = 1.5;//gravedad
-        this.MAX_FALL_SPEED = 20;//velocidad maxima de caida
-        this.JUMP_FORCE = -8;//fuerza del salto
-        this.JUMP_INTERVAL = 1000;//intervalo de tiempo entre saltos
-        this.FRICTION = 0.4;//friccion
+        this.lastJumpTime = Date.now();
+        this.pCollButton = true;
+        this.isJumping = false;
+        this.view = false;
+        this.velocityY = 0;
+        this.velocityX = 0;
+        this.moveSpeed = 5;
+        this.direction = 1;
+        this.GRAVITY = 1.5;
+        this.MAX_FALL_SPEED = 20;
+        this.JUMP_FORCE = -8;
+        this.JUMP_INTERVAL = 1000;
+        this.FRICTION = 0.4;
+        this.lastAttackTime = 0; // Tiempo del último ataque al jugador
+        this.ATTACK_COOLDOWN = 1000; // Cooldown de 1 segundo entre ataques
+        
     }
 
-    //aplica la gravedad al enemigo
     applyGravity() {
         if (!this.pCollButton) {
-            this.velocityY += this.GRAVITY; //aumenta la velocidad en el eje y
-            this.velocityY = Math.min(this.velocityY, this.MAX_FALL_SPEED); //limita la velocidad en el eje y
+            this.velocityY += this.GRAVITY;
+            this.velocityY = Math.min(this.velocityY, this.MAX_FALL_SPEED);
         }
     }
 
-    //aplica la friccion al enemigo
     applyFriction() {
         if (this.velocityX > 0) {
-            this.velocityX = Math.max(0, this.velocityX - this.FRICTION);   //si la velocidad en el eje x es mayor que 0, disminuye la velocidad en el eje x
+            this.velocityX = Math.max(0, this.velocityX - this.FRICTION);
         } else if (this.velocityX < 0) {
-            this.velocityX = Math.min(0, this.velocityX + this.FRICTION);   //si la velocidad en el eje x es menor que 0, aumenta la velocidad en el eje x
+            this.velocityX = Math.min(0, this.velocityX + this.FRICTION);
         }
     }
 
-    //maneja las colisiones del enemigo
     handleCollisions(visibleEntities, newX, newY) {
-        this.pCollButton = this.pCollLeft = this.pCollRight = false; //resetea las colisiones
+        this.pCollButton = this.pCollLeft = this.pCollRight = false;
 
         for (let entity of visibleEntities) {
             if (entity.type !== 'solid') continue;
 
-            //si el enemigo colisiona con una pared vertical, se detiene y se mueve hacia la otra pared
             if (this.checkVerticalCollision(entity, newX, newY)) {
                 newY = entity.y - this.height;
                 this.velocityY = 0;
@@ -72,7 +70,6 @@ class BasicEnemy extends Criature {
         return { newX, newY };
     }
 
-    //verifica si el enemigo colisiona con una pared vertical
     checkVerticalCollision(entity, newX, newY) {
         return this.velocityY > 0 &&
                this.x + this.width > entity.x && 
@@ -81,7 +78,6 @@ class BasicEnemy extends Criature {
                this.y + this.height <= entity.y;
     }
 
-    //verifica si el enemigo colisiona con una pared lateral
     checkLateralCollision(entity, newX, newY) {
         return newY + this.height > entity.y &&
                newY < entity.y + entity.height &&
@@ -89,7 +85,6 @@ class BasicEnemy extends Criature {
                 (this.x >= entity.x + entity.width && newX < entity.x + entity.width));
     }
 
-    //maneja el salto del enemigo
     handleJump(currentTime) {
         if (currentTime - this.lastJumpTime >= this.JUMP_INTERVAL && this.pCollButton) {
             this.velocityY = this.JUMP_FORCE;
@@ -100,13 +95,13 @@ class BasicEnemy extends Criature {
         }
     }
 
-    //actualiza la posición del enemigo
     update(visibleEntities) {
         const currentTime = Date.now();
         
-        if(this.view === true){
-            this.applyGravity(); //aplica la gravedad al enemie
+        if (this.view === true) {
+            this.applyGravity();
         }
+
         let newPosition = this.handleCollisions(
             visibleEntities,
             this.x + this.velocityX,
@@ -116,39 +111,44 @@ class BasicEnemy extends Criature {
         this.x = newPosition.newX;
         this.y = newPosition.newY;
 
-        this.applyFriction(); //aplica la friccion al enemigo
-        this.handleJump(currentTime); //maneja el salto del enemigo
-        this.checkPlayerCollision(); //verifica si el enemigo colisiona con el jugador
+        this.applyFriction();
+        this.handleJump(currentTime);
+        this.checkPlayerCollision(currentTime); // Pasar el tiempo actual para el cooldown
     }
 
-    //verifica si el enemigo colisiona con el jugador
-    checkPlayerCollision() {
-        if (!contextThisGame.player) return; //si no hay jugador, no se ejecuta
+    checkPlayerCollision(currentTime) {
+        if (!contextThisGame.player) return;
         const player = contextThisGame.player;
-        
-        //si el jugador colisiona con el enemigo, se mueve el jugador hacia la otra pared
+    
+        // Verificar si hay colisión entre el jugador y el enemigo
         if (player.x < this.x + this.width &&
             player.x + player.width > this.x &&
             player.y < this.y + this.height &&
             player.y + player.height > this.y) {
-            
-            const overlapLeft = this.x + this.width - player.x;
-            const overlapRight = player.x + player.width - this.x;
-            const overlapTop = this.y + this.height - player.y;
-            const overlapBottom = player.y + player.height - this.y;
-
-            const minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
-            //si el jugador tiene vida, le resta vida al jugador
-            if (player.stats && player.stats.heal > 0) {
-                player.stats.heal -= this.stats.damage;
-                console.log(`Jugador dañado! Vida restante: ${player.stats.heal}`);
+                
+            // Calcular el vector de colisión
+            const deltaX = player.x - this.x;
+            const deltaY = player.y - this.y;
+    
+            // Verificar cooldown antes de dañar al jugador
+            if (currentTime - this.lastAttackTime >= this.ATTACK_COOLDOWN) {
+                if (player.stats && player.stats.heal > 0) {
+                     // Calcular el ángulo de colisión en radianes
+                    const angleInRadians = Math.atan2(deltaY, deltaX);
+                    // Convertir a grados
+                    const angleInDegrees = angleInRadians * (180 / Math.PI);
+                    player.stats.heal -= this.stats.damage;
+                    if(player.stats.heal > this.stats.damage){
+                        player.collEnemy = {rad:angleInDegrees.toFixed(2)};
+                    }
+                    this.lastAttackTime = currentTime; // Actualizar el tiempo del último ataque
+                }
             }
         }
     }
 
-    //dibuja el enemigo
     draw(context, offsetX, offsetY) {
-        super.draw(context,offsetX,offsetY)
+        super.draw(context, offsetX, offsetY);
     }
 }
 

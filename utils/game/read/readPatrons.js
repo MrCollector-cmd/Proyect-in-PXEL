@@ -2,6 +2,7 @@ import { size } from "../../configs/size.js";
 import { Entity } from "../objects/rect.js";
 import { platformsIni } from "../../configs/patrons/patronsPlatformsInit.js";
 import { platformsEnd } from "../../configs/patrons/patronsPlatformsEnd.js";
+import { TILE_TYPES } from "../../configs/data/tileTypes.js";
 const readPatrons = {
     patronsMid: null,
     patronsEnd: platformsEnd,
@@ -100,6 +101,17 @@ const readPatrons = {
                     texture = null
                     notHeigt = true;
                     id = 6;
+                }else if (cell === 8) {
+                    objectType = "notColl";
+                    repeatTexture = false;
+                    texture = null
+                    notHeigt = true;
+                    id = 8;
+                } else if (cell === 9) {
+                    objectType = "solid";
+                    texture = "src/terrain/terrain.png";
+                    repeatTexture = true;
+                    id = 9;
                 }
     
     
@@ -140,7 +152,7 @@ const readPatrons = {
 
     // Itera sobre las entidades del mapa
     for (let entity of map) {
-        if (entity.id === 1) {
+        if (entity.id === 1 || entity.id === 3) {
             const tiles = entity.width / size.tils; // Asume que width es múltiplo de size.tils
 
             // Si ignore es true, saltar la primera entidad con id === 1
@@ -160,15 +172,56 @@ const readPatrons = {
     }
 
     return positions; // Devuelve las posiciones de todos los tiles omitidos
-}
-,
-getForwardRandomPositions: function (map, count = 5) {
-    if (!map) return console.warn("No se ha pasado ningún mapa para la creación de enemigos");
+    },
+    getPositionsWithOneInAir: function (map, context) {
+    const positions = [];
+    const minSeparation = 4 * size.tils; // Separación mínima de 8 tiles
 
+    for (let entity of map) {
+        // Ignorar entidades con id === 4
+        if (entity.id === 4) {
+            continue;
+        }
+
+        // Verificar si hay algún objeto en el mapa que esté directamente debajo de la entidad actual
+        const isInAir = !map.some(otherEntity =>
+            otherEntity !== entity && // Asegurar que no se compare con sí mismo
+            otherEntity.x < entity.x + entity.width && // Solapamiento en el eje X
+            otherEntity.x + otherEntity.width > entity.x && // Solapamiento en el eje X
+            otherEntity.y === entity.y + size.tils // Exactamente debajo en el eje Y
+        );
+
+        if (isInAir) {
+            // Si no tiene soporte, agregar al resultado
+            const tiles = entity.width / size.tils; // Cantidad de tiles en la entidad
+
+            // Generar las posiciones de X para cada tile, omitiendo la primera y la última
+            for (let i = 1; i < tiles - 1; i++) { // Comienza en 1 y termina en tiles - 1
+                const newPos = {
+                    x: entity.x + i * size.tils,  // Incrementa la posición X por cada tile
+                    y: entity.y                  // Mantén la misma posición Y
+                };
+
+                // Verificar que la nueva posición esté a una distancia mínima de 8 tiles de las posiciones existentes
+                const isFarEnough = positions.every(pos => {
+                    const distance = Math.abs(newPos.x - pos.x);
+                    return distance >= minSeparation;
+                });
+
+                if (isFarEnough) {
+                    positions.push(newPos);
+                }
+            }
+        }
+    }
+
+    return positions; // Devuelve las posiciones en el aire con la separación mínima
+    },
+    getForwardRandomPositions: function (map, count = 5) {
+    if (!map) return console.warn("No se ha pasado ningún mapa para la creación de enemigos")
     // Obtener todas las posiciones con id 1
     const positions = this.getPositionsWithIdOne(map, true);
-    if (!positions.length) return console.warn("No hay posiciones válidas para seleccionar");
-
+    if (!positions.length) return console.warn("No hay posiciones válidas para seleccionar")
     const result = [];
     const usedPositions = new Set(); // Registro de posiciones ya usadas
     const minSeparation = 5 * size.tils; // Separación mínima entre posiciones
@@ -216,10 +269,7 @@ getForwardRandomPositions: function (map, count = 5) {
     }
 
     return result;
-}
-
-    
-    ,
+    },
     getCenterPositions: function (map, numPositions) {
         const positions = [];
     
@@ -256,21 +306,13 @@ getForwardRandomPositions: function (map, count = 5) {
     
         return randomPositions; // Devuelve las posiciones aleatorias seleccionadas
     },
-    
-    createEntitiesFromRandomPositions: function(map, quantity = null, imageIndex = null) {
-        const basePath = imageIndex === 'index1' 
-            ? "src/terrain/swamp/decor/new" 
-            : "src/terrain/swamp/decor";
-        
+
+    createEntitiesFromRandomPositions: function(map, quantity = null, typeBiome = null, exclude = []) {
         const positions = readPatrons.getPositionsWithIdOne(map); // Obtener las posiciones con ID 1
-        const entityTypes = [
-            { id: 10, height: 2 * size.tils / 2.5, width: 2 * size.tils / 2.5, img: `${basePath}/mushrooms.png`, type: "notColl", repeatTexture: null },
-            { id: 11, height: 4 * size.tils / 2.5, width: 4 * size.tils / 2.5, img: `${basePath}/bigGras1.png`, type: "notColl", repeatTexture: null },
-            { id: 12, height: 2 * size.tils / 2.5, width: 2 * size.tils / 2.5, img: `${basePath}/littleGras1.png`, type: "notColl", repeatTexture: null },
-            { id: 13, height: 2 * size.tils / 2.7, width: 2 * size.tils / 2.7, img: `${basePath}/littleGras2.png`, type: "notColl", repeatTexture: null },
-            { id: 14, height: 1 * size.tils, width: 1 * size.tils, img: `${basePath}/littleGras3.png`, type: "notColl", repeatTexture: null, marginY: 1 * size.tils / 4 },
-            { id: 15, height: 0.5 * size.tils, width: 1 * size.tils, img: `${basePath}/littleGras4.png`, type: "notColl", repeatTexture: null, marginY: 1 * size.tils / 5 }
-        ];
+        if (typeBiome === null) {
+            return;
+        }
+        const biome = TILE_TYPES[typeBiome]; // Acceder a las entidades del bioma Swamp
     
         const entitys = []; // Array que almacena las entidades creadas
     
@@ -278,7 +320,15 @@ getForwardRandomPositions: function (map, count = 5) {
         if (quantity) {
             const shuffledPositions = [...positions].sort(() => Math.random() - 0.5); // Barajar las posiciones
             for (let i = 0; i < Math.min(quantity, shuffledPositions.length); i++) {
-                const entityType = entityTypes[Math.floor(Math.random() * entityTypes.length)];
+                const entityNames = Object.keys(biome); // Obtener las claves de las entidades definidas
+                const entityName = entityNames[Math.floor(Math.random() * entityNames.length)];
+                const entityType = biome[entityName]; // Seleccionar un tipo de entidad aleatorio
+    
+                // Comprobar si el nombre de la entidad está en el array exclude
+                if (exclude.includes(entityName)) {
+                    continue; // Si está en exclude, omitir esta entidad
+                }
+    
                 const pos = shuffledPositions[i];
     
                 if (pos && !entityType.marginY) {
@@ -318,11 +368,18 @@ getForwardRandomPositions: function (map, count = 5) {
             while (randomPositions.length < 5 && block.length > 0) {
                 const randomIndex = Math.floor(Math.random() * block.length);
                 randomPositions.push(block[randomIndex]);
-                
             }
     
             for (let j = 0; j < 5; j++) {
-                const entityType = entityTypes[Math.floor(Math.random() * entityTypes.length)];
+                const entityNames = Object.keys(biome); // Obtener las claves de las entidades definidas
+                const entityName = entityNames[Math.floor(Math.random() * entityNames.length)];
+                const entityType = biome[entityName]; // Seleccionar un tipo de entidad aleatorio
+    
+                // Comprobar si el nombre de la entidad está en el array exclude
+                if (exclude.includes(entityName)) {
+                    continue; // Si está en exclude, omitir esta entidad
+                }
+    
                 const pos = randomPositions[j];
     
                 if (pos && !entityType.marginY) {
@@ -355,6 +412,7 @@ getForwardRandomPositions: function (map, count = 5) {
     
         return entitys;
     },
+    
     // Busca entidades con ID 5 y calcula su agrupamiento y crea una nueva entidad
     findEntitiesWithIdFiveAndWidths: function (map) {
         const entitiesWithIdFive = map.filter(entity => entity.id === 5);
@@ -386,69 +444,145 @@ getForwardRandomPositions: function (map, count = 5) {
             return new Entity(x, y, totalWidth, 15, "src/terrain/swamp/water.png", "notCollOp", false, 6, 0.3);
         });
     },
-    createEntitiesFromCenterPositions: function (map,numPositions) {
+    createEntitiesFromCenterPositions: function (map, numPositions, typeBiome = null, include = []) {
         const entities = [];
+        if (typeBiome == null) {
+            return;
+        }
     
         // Obtener las posiciones centrales usando la función existente
-        const centerPositions = readPatrons.getCenterPositions(map,numPositions);
+        const centerPositions = readPatrons.getCenterPositions(map, numPositions);
+        
+        // Acceder a las entidades del bioma
+        const biome = TILE_TYPES[typeBiome];
     
-        // Crear nuevas entidades a partir de las posiciones centrales
-        centerPositions.forEach(pos => {
-            const entity = new Entity(
-                pos.centerX - 100,     // Posición X central
-                pos.centerY - 230,     // Posición Y central
-                200,              // Ancho de la entidad (ejemplo, puedes ajustarlo)
-                200,              // Alto de la entidad (ejemplo, puedes ajustarlo)
-                "src/terrain/swamp/decor/mushrooms.png",// 'src/obstacle/tree.png',   // Textura por defecto (ajústala si lo necesitas)
-                'notColl',         // Tipo de entidad
-                false,           // repeatTexture (por defecto)
-                17    // ID aleatorio o puedes generar uno específico
-            );
+        // Asegurarnos de que `include` es un array (si no lo es, lo convertimos a uno vacío)
+        if (!Array.isArray(include)) {
+            include = [];
+        }
     
-            // Agregar la entidad creada al array
-            entities.push(entity);
-        });
+        if (include.length > 0) {
+            // Si se proporciona el argumento `include`, se agregan las entidades específicas
+            const entityNames = Object.keys(biome);
+    
+            // Filtrar las entidades que están en el array `include` y existen en el bioma
+            include.forEach(entityName => {
+                if (entityNames.includes(entityName)) {
+                    const entityType = biome[entityName];
+    
+                    centerPositions.forEach(pos => {
+                        const entity = new Entity(
+                            pos.centerX - 100, // Posición X central ajustada
+                            pos.centerY - 230, // Posición Y central ajustada
+                            entityType.width,  // Ancho de la entidad
+                            entityType.height, // Alto de la entidad
+                            entityType.img,    // Textura de la entidad
+                            entityType.type,   // Tipo de entidad
+                            entityType.repeatTexture, // Propiedad repeatTexture
+                            entityType.id      // ID de la entidad
+                        );
+    
+                        // Agregar la entidad creada al array
+                        entities.push(entity);
+                    });
+                } else {
+                    console.warn(`La entidad "${entityName}" no está definida en el bioma "${typeBiome}".`);
+                }
+            });
+        }
     
         return entities; // Devuelve el array con las nuevas entidades
     },
-    createIluminations: function (map) {
+createIluminations: function (map, biomeType = null) {
         const entities = [];
+        if (biomeType == null) {
+            return;
+        }
     
         // Obtener posiciones de adelante usando la función getForwardRandomPositions
         const forwardPositions = this.getForwardRandomPositions(map);
+        // Obtener posiciones de los bloques en el aire
+        const airPositions = this.getPositionsWithOneInAir(map);
     
+        // Iterar sobre las posiciones para crear las entidades principales
         forwardPositions.forEach(pos => {
-            // Crear la primera entidad en la posición obtenida
-            const entity1 = new Entity(
-                pos.x,  // Posición X central
-                pos.y - 100,  // Posición Y central
-                20,          // Ancho de la entidad
-                100,          // Alto de la entidad
-                "src/terrain/swamp/decor/ilumination/mushBottom.png", // Textura
-                'notColl',    // Tipo de entidad
-                false,        // repeatTexture
-                18            // ID aleatorio o específico
-            );
+            const biomeEntities = TILE_TYPES[biomeType];
+            const glowEntities = Object.keys(biomeEntities).filter(type => biomeEntities[type].glowLeage);
     
-            // Crear la segunda entidad en la misma posición, pero ajustando la coordenada Y
-            const entity2 = new Entity(
-                pos.x - 13,  // Misma posición X
-                pos.y - entity1.height - 35, // Posición Y ajustada hacia abajo
-                40,          // Ancho de la entidad
-                40,          // Alto de la entidad
-                "src/terrain/swamp/decor/ilumination/mushTop.png", // Textura
-                'solid',    // Tipo de entidad
-                false,        // repeatTexture
-                19,            // ID aleatorio o específico (diferente al de la primera)
-                undefined,
-                true ///brillo
-            );
+            const sortedEntities = glowEntities.sort((a, b) => biomeEntities[a].glowLeage - biomeEntities[b].glowLeage);
     
-            // Agregar las dos entidades al array
-            entities.push(entity1, entity2);
+            let yOffset = 0;
+            let xOffset = 0;
+    
+            sortedEntities.forEach((type, index) => {
+                const tile = biomeEntities[type];
+    
+                if (tile) {
+                    if (tile.glowLeage === 1) {
+                        yOffset = 0;
+                        xOffset = 0;
+                    } else if (tile.glowLeage === 2) {
+                        const bottomEntity = biomeEntities[sortedEntities[0]];
+                        yOffset += bottomEntity.height - 10;
+                        xOffset = -14;
+                    }
+    
+                    const entity = new Entity(
+                        pos.x + xOffset,
+                        pos.y - tile.height - yOffset,
+                        tile.width,
+                        tile.height,
+                        tile.img,
+                        tile.type,
+                        tile.repeatTexture,
+                        tile.id,
+                        tile.marginY,
+                        tile.glow || false
+                    );
+    
+                    entities.push(entity);
+                }
+            });
         });
     
+        // Agregar entidades con glowUp debajo de un subconjunto de airPositions
+        if (airPositions.length > 0) {
+            const biomeEntities = TILE_TYPES[biomeType];
+            const glowUpEntities = Object.keys(biomeEntities).filter(type => biomeEntities[type].glowUp);
+    
+            // Elegir un subconjunto aleatorio de airPositions
+            const randomPositions = airPositions.filter(() => Math.random() < 0.50); // % de probabilidades de seleccionar cada posición
+    
+            randomPositions.forEach(pos => {
+                // Seleccionar un tipo aleatorio de las entidades con glowUp
+                const randomType = glowUpEntities[Math.floor(Math.random() * glowUpEntities.length)];
+                const tile = biomeEntities[randomType];
+    
+                if (tile) {
+                    // Crear la entidad debajo de la posición en el aire
+                    const entity = new Entity(
+                        pos.x,
+                        pos.y + tile.height + 10, // Posición Y debajo de la posición en el aire
+                        tile.width,
+                        tile.height,
+                        tile.img,
+                        tile.type,
+                        tile.repeatTexture,
+                        tile.id,
+                        tile.marginY,
+                        tile.glowUp || false
+                    );
+    
+                    entities.push(entity);
+                }
+            });
+        }
+    
         return entities; // Devuelve el array con las entidades creadas
-    },
+    }
+    
+    
+    
+    
 }
 export { readPatrons };

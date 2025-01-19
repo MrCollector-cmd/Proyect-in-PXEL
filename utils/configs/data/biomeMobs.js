@@ -2,22 +2,10 @@ const BIOME_MOBS = {
     forest: {
         1: {
             name: "slime",
-            health: 100,
-            damage: 15,
-            sprite: "src/mobs/forest/slime.png"
+            health: 5,
+            damage: 2,
+            sprite: "src/terrain/swamp/enemy/slime.png"
         },
-        2: {
-            name: "Boar",
-            health: 200,
-            damage: 25,
-            sprite: "src/mobs/forest/boar.png"
-        },
-        3: {
-            name: "Bee",
-            health: 50,
-            damage: 5,
-            sprite: "src/mobs/forest/bee.png"
-        }
     },
     dungeon: {
         1: {

@@ -3,12 +3,13 @@ const BIOMES = {
         name:"swamp",
         levels: 5,
         mapsSize: 7,
+        background:'src/terrain/background/Background1.png',
         filter:{
             r:4,
             g:48,
             b:15,
             opacity: 0.5
-        }
+        },
     }
 }
 

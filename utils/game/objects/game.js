@@ -15,20 +15,19 @@ import { Bow } from "./weapons/Bow.js";
 import { UI } from "./Ui/layerOfUi.js";
 class Game {
     constructor() {
+        // //////////////////////////////////////////////////////////////////////
+        this.spawned = false
         this.canvas = document.getElementById('gameWorld');
         this.updateCanvasSize();
         this.context = this.canvas.getContext('2d');
-        // Carga el fondo 
-        this.background =new Image()
-        this.background.src = 'src/terrain/background/Background1.png'
         // Lee el bioma
         contextThisGame.readBiome(1);
         // bandera de creacion de enemeigos
         this.enemiesCreated = false;
         this.map = new Map(contextThisGame.sizeInchuncks); // Inicializamos el mapa
-
         // Cargar al jugador
-        this.loadPlayer(3*size.tils, size.tils * 12, size.tils, size.tils, "src/skins/skinD.png", "player", { heal: 10, damage: 10, dash:5});
+        this.loadPlayer(0, 0, size.tils, size.tils, "src/skins/skinD.png", "player", { heal: 10, damage: 10, dash:5, maxHeal:10, maxStamina:5});
+       
         UI.dataPlayer = contextThisGame.player
         UI.getData();
         // Crear la cámara
@@ -42,7 +41,8 @@ class Game {
         this.visibleEntitiesSecondLayer = []
         // Inicializar enemigos
         this.enemies = [];
-        
+    
+        // ////////////////////////////////////////////////////////////////////////
         //crear el inventario
         this.inventory = new Inventory();
 
@@ -98,7 +98,7 @@ class Game {
                 size.tils, 
                 'src/terrain/swamp/enemy/slime.png', 
                 "enemy", 
-                { heal: 5, damage: 5 }
+                { heal: 5, damage: 2 }
             );
             this.enemies.push(enemy);
         });
@@ -134,13 +134,7 @@ class Game {
     loadPlayer(x, y, width, height, imgPath, type, stats) {
         contextThisGame.player = new Criature(x, y, width, height, imgPath, type, stats);
     }
-
     loadMap() {
-        if (!contextThisGame.player) {
-            console.error("No se ha cargado un jugador.");
-            return;
-        }
-
         if (this.map.map.index1 === null) {
             this.map.initialize();
             contextThisGame.player.mapObjects = this.map.map.index1;
@@ -149,24 +143,50 @@ class Game {
         if (this.map.currentChunkIndex < this.map.maxChunks - 2) {
             this.map.advanceChunk();
             contextThisGame.player.mapObjects = this.map.map.index1;
-            this.map.map.index2 = readPatrons.createEntitiesFromCenterPositions(this.map.map.index1, 10)
-            this.map.map.index2.push(
-                ...readPatrons.createEntitiesFromRandomPositions(this.map.map.index1,null,"index1")
-            );
-            this.map.map.index4 = readPatrons.createEntitiesFromRandomPositions(this.map.map.index1)
+            
         }else{
+            this.spawn = this.map.map.index1.find(item=>item.id === 8)
+            contextThisGame.player.x = this.spawn.x
+            contextThisGame.player.y = this.spawn.y - 60
             this.map.ending()
             this.map.maxChunksCreated = true;
         }
-
         if(this.map.maxChunksCreated && !this.enemiesCreated){
-            let res = readPatrons.getForwardRandomPositions(this.map.map.index1, 15)
+            this.map.map.index2 = readPatrons.createEntitiesFromCenterPositions(this.map.map.index1, 10,"swamp",['Mushrooms'])
+            this.map.map.index2.push(
+                ...readPatrons.createEntitiesFromRandomPositions(this.map.map.index1,null,"swamp",['Mushrooms',"MushroomLightBottom","MushroomLightTop",'glowUp1','glowUp2','glowUp3','glowUp4'])
+            );
+            this.map.map.index4 = readPatrons.createEntitiesFromRandomPositions(this.map.map.index1,null,"swamp",['Mushrooms',"MushroomLightBottom","MushroomLightTop",'glowUp1','glowUp2','glowUp3','glowUp4'])
+            let res = readPatrons.getForwardRandomPositions(this.map.map.index1, 13)
             // Crear múltiples enemigos en diferentes posiciones
             this.createEnemies(res);
-            this.map.map.index5=readPatrons.createIluminations(this.map.map.index1)
+            this.map.map.index5=readPatrons.createIluminations(this.map.map.index1,'swamp')
         }
     }
-
+    nextMap() {
+        if (contextThisGame.next === false) {
+            return; // Si la bandera `next` es falsa, no hace nada.
+        }
+        // Limpiar el mapa
+        for (let key in this.map.map) {
+            if (this.map.map.hasOwnProperty(key)) {
+                // Se vacían los objetos de cada capa del mapa
+                this.map.map[key] = null;
+            }
+        }
+        // Reiniciar el índice del chunk
+        this.map.currentChunkIndex = 0;
+        // Reiniciar el estado de los chunks
+        this.map.maxChunksCreated = false;
+        //area visible Reiniciadas
+        this.visibleEntitiesFirstLayer = []
+        this.waterEntitis = []
+        this.visibleEntitiesSecondLayer = []
+        // Inicializar enemigos Reiniciados
+        this.enemies = [];
+        // Restablecer la bandera de siguiente mapa
+        contextThisGame.updateContext()
+    }
     drawMapFirstLayer(offsetX, offsetY) {
         const visibleArea = this.camera.getVisibleArea();
 
@@ -267,7 +287,7 @@ class Game {
         const { offsetX, offsetY } = this.camera.getOffset();
 
         //dibuja el fondo
-        filters.drawBackground(this.context,'image',{image:this.background,blur:1})
+        filters.drawBackground(this.context,'image',{image:contextThisGame.background,blur:1})
 
         // Crea partículas
         particles.animate(this.context, this.canvas, offsetX,offsetY); 
@@ -309,7 +329,15 @@ class Game {
         this.drawProjectiles(offsetX, offsetY);
 
         //Dibuja la UI
-        UI.drawUi(this.context, offsetX, offsetY)
+        UI.drawPorcent(this.context)
+        UI.drawUi(this.context)
+
+        if (contextThisGame.player.stats.heal <= 0) {
+            contextThisGame.player.x = this.spawn.x 
+            contextThisGame.player.y = this.spawn.y - 60
+            contextThisGame.player.stats.heal = 10
+            contextThisGame.player.movePlayer = false
+        }
 
         //dibuja el mouse
         mouseControlls.refreshMouseStyle();
@@ -319,7 +347,8 @@ class Game {
         // Limpia el canvas
         this.clearCanvas();
         //carga los chunks del mapa
-        if (!this.map.maxChunksCreated) {
+        if (!this.map.maxChunksCreated && contextThisGame.next === false) {
+            console.log(contextThisGame.levelAct)
             this.loadMap();
             let water = readPatrons.findEntitiesWithIdFiveAndWidths(this.map.map.index1)
             this.map.map.index3 = water
@@ -327,6 +356,7 @@ class Game {
         this.updateEnemies()
         // comienzo de escucha de controles
         controlls.refresh();
+
         this.updateEnemies()
         contextThisGame.player.move(this.visibleEntitiesFirstLayer, regTemp);
         
@@ -340,6 +370,8 @@ class Game {
         this.updateCamera(mouseControlls.getPosMouse());
 
         UI.getData();
+
+        this.nextMap();
 
         // Actualizar el frame del arco si está cargando
         if (this.bow.charging) {

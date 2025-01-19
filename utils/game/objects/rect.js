@@ -1,6 +1,7 @@
 import { controlls } from "../controlls/controlls.js";
 import { size } from "../../configs/size.js";
 import { imagesController } from "../../configs/imagesController.js";
+import { contextThisGame } from "./context.js";
 class Rect {
     constructor(x, y, width, height) {
         this.x = x;
@@ -133,7 +134,23 @@ class Entity extends Rect {
             const lightRadius = 300;
 
             const gradient = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, lightRadius);
-            gradient.addColorStop(0, 'rgba(96, 112, 250, 0.17)');
+            gradient.addColorStop(0, 'rgba(96, 112, 250, 0.19)');
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+            context.beginPath();
+            context.arc(centerX, centerY, lightRadius, 0, Math.PI * 2);
+            context.fillStyle = gradient;
+            context.fill();
+
+            context.restore();
+        }else if (this.glowUp) {
+            context.save();
+            const centerX = this.x + this.width / 2 - offsetX;
+            const centerY = this.y + this.height / 2 - offsetY;
+            const lightRadius = 200;
+
+            const gradient = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, lightRadius);
+            gradient.addColorStop(0, 'rgba(96, 112, 250, 0.12)');
             gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
 
             context.beginPath();
@@ -170,10 +187,9 @@ class Criature extends Entity {
         this.direction = false;
         this.isDashing = false;
         this.doubleJumpAvailable = true;
-        this.animations={
-            idle:true
-        }
-        this.rotation = 0;  // Ángulo de rotación en grados
+        this.collEnemy = null;
+        this.newX = 0
+        this.newY = 0
     }
 
     move(mapObjects) {
@@ -184,16 +200,76 @@ class Criature extends Entity {
         const maxFallSpeed = 20;
         const speedDash = 40;
         const dashDistance = 200;
-    
 
+        // Impide el movimiento si el personaje no esta bien cargado o si su vida es 0(cero)
+        if(this.stats === undefined || this.stats.heal <= 0){
+            return
+        }
+        ////
         this.handleJump(jumpForce, gravity, maxFallSpeed);
         this.handleMovement(speed, mapObjects);
-        // this.handleRotation();  // Llamar al método de rotación
         this.handleDash(speedDash, dashDistance);
         this.applyMovement();
         this.checkCollisions(mapObjects);
+        this.interacts(mapObjects);
         this.updatePosition();
+        this.updateStats(Date.now())
     }
+
+    interacts(mapObjects) {
+        if (controlls.interact) {
+            // Recorrer los objetos filtrados
+            for (let obj of mapObjects) {
+                 if (obj.id === 6) {
+                    // Definir las dimensiones del objeto
+                    let mapObject = {
+                        x: obj.x,
+                        y: obj.y,
+                        width: obj.width,
+                        height: obj.height
+                    };
+                    // Verificar si las coordenadas del jugador están dentro del área del objeto
+                if (
+                    this.x < mapObject.x + mapObject.width &&
+                    this.x + this.width > mapObject.x &&
+                    this.y < mapObject.y + mapObject.height &&
+                    this.y + this.height > mapObject.y
+                )  {
+                    // Se ha detectado una interacción con el objeto de id 6
+                    contextThisGame.next = true;
+                }
+                
+                 }
+            }
+        }
+    }
+
+    updateStats(currentTime) {
+        const STAMINA_RECOVERY_INTERVAL = 1900; // Intervalo de recuperación en milisegundos (1 segundo)
+        const MAX_STAMINA = this.stats.maxStamina; // Valor máximo de stamina
+        const MAX_HEAL = this.stats.maxHeal; // Valor máximo de vida
+    
+        // Inicializar lastStaminaUpdate si no existe
+        if (!this.lastStaminaUpdate) {
+            this.lastStaminaUpdate = currentTime ;
+        }
+    
+        // Calcular el tiempo transcurrido desde la última actualización
+        const elapsedTime =  Date.now() - this.lastStaminaUpdate;
+    
+        // Verificar si ha pasado el intervalo de recuperación
+        if (elapsedTime >= STAMINA_RECOVERY_INTERVAL) {
+            // Calcular cuántos intervalos completos han pasado
+            const intervalsPassed = Math.floor(elapsedTime / STAMINA_RECOVERY_INTERVAL);
+    
+            // Incrementar la stamina según los intervalos completos transcurridos
+            this.stats.dash = Math.min(this.stats.dash + intervalsPassed, MAX_STAMINA);
+    
+            // Actualizar lastStaminaUpdate al último intervalo completo
+            this.lastStaminaUpdate += intervalsPassed * STAMINA_RECOVERY_INTERVAL;
+        }
+    }
+
     handleJump(jumpForce, gravity, maxFallSpeed) {
         if (controlls.up && this.remainingJumps > 0 && this.canJump) {
             // Realizar el salto si se cumple la condición de que el jugador puede saltar
@@ -257,12 +333,15 @@ class Criature extends Entity {
             this.currentDashDistance = 0;
         }
     
-        if (this.dash) {
+        if (this.dash && this.stats.dash > 0 ) {
             const dashStep = this.velocityX;
             this.currentDashDistance += Math.abs(dashStep);
             if (this.currentDashDistance >= dashDistance) {
                 this.dash = false;
                 this.velocityX = 0;
+                if (this.stats.dash >0) {
+                    this.stats.dash -= 1
+                }
             } else {
                 this.moveX = dashStep;
             }
@@ -280,16 +359,20 @@ class Criature extends Entity {
     
     checkCollisions(mapObjects) {
         let isOnGround = false;
-    
+        
+        // Paso para mover progresivamente
+        const stepSize = 10; // Tamaño del paso para el movimiento (puedes ajustar este valor)
+        
         for (let obj of mapObjects) {
             if (obj.type === 'solid') {
+                // Verificar colisiones en el eje Y
                 if (this.willCollide(this.x, this.newY, obj)) {
                     if (this.velocityY > 0) {
                         // Evitar que el personaje atraviese el suelo
                         this.velocityY = 0;
                         this.pCollButton = true;
                         isOnGround = true;
-                        this.newY = obj.y - this.height;
+                        this.newY = obj.y - this.height;  // Ajustar la posición en Y
                     } else if (this.velocityY < 0) {
                         this.newY = obj.y + obj.height;
                         this.velocityY = 0;
@@ -297,15 +380,79 @@ class Criature extends Entity {
                     }
                 }
     
+                // Verificar colisiones en el eje X
                 if (this.willCollide(this.newX, this.y, obj)) {
                     if (this.moveX > 0) {
+                        // Colisión por la derecha
                         this.newX = obj.x - this.width;  // Ajustar posición para no atravesar el objeto
                         this.pCollRight = true;
                     } else if (this.moveX < 0) {
+                        // Colisión por la izquierda
                         this.newX = obj.x + obj.width;  // Ajustar posición para no atravesar el objeto
                         this.pCollLeft = true;
                     }
                 }
+    
+                // Verificar colisiones sin movimiento (cuando el jugador no se mueve pero está en contacto con el objeto)
+                if (this.x >= obj.x && this.x <= obj.x + obj.width &&
+                    this.y >= obj.y && this.y <= obj.y + obj.height) {
+                    // Si no hay movimiento y se está colisionando, registramos la colisión
+                    if (this.moveX === 0 && this.velocityY === 0) {
+                        // Caso de colisión sin movimiento
+                        this.pCollRight = false;
+                        this.pCollLeft = false;
+                        this.pCollButton = false;
+                        this.pCollTop = false;
+    
+                        // Dependiendo de la posición relativa, puedes agregar lógica para un empuje en esa situación
+                        // Ejemplo: Si el jugador está tocando el objeto en el eje X y Y, aplicar un pequeño empuje
+                        if (this.x < obj.x) {  // Colisión en el eje X
+                            this.pCollRight = true;
+                        } else if (this.x + this.width > obj.x + obj.width) {
+                            this.pCollLeft = true;
+                        }
+                        if (this.y < obj.y) {  // Colisión en el eje Y
+                            this.pCollTop = true;
+                        } else if (this.y + this.height > obj.y + obj.height) {
+                            this.pCollButton = true;
+                        }
+                    }
+                }
+            }
+    
+            // Empujar al personaje cuando colisiona con un enemigo
+            if (this.collEnemy !== null) {
+                const pushForce = 100; // Fuerza de empuje total
+                const steps = Math.ceil(pushForce / stepSize); // Número de pasos que se darán (dependiendo del tamaño del paso)
+    
+                // Convertir el valor de rad (grados) a radianes
+                const radInRadians = this.collEnemy.rad * (Math.PI / 180); // Convertir grados a radianes
+                
+                // Calcular el desplazamiento en las direcciones X e Y usando el ángulo de colisión
+                const pushX = Math.cos(radInRadians) * stepSize; // Desplazamiento en X por paso
+                const pushY = Math.sin(radInRadians) * stepSize; // Desplazamiento en Y por paso
+                
+                let moved = false;
+    
+                // Realizar el empuje en pasos pequeños
+                for (let i = 0; i < steps; i++) {
+                    const newPosX = this.newX + pushX;
+                    const newPosY = this.newY + pushY;
+                    
+                    // Verificar si la nueva posición no causa otra colisión en ambos ejes X y Y
+                    let collisionInX = this.willCollide(newPosX, this.newY, mapObjects);
+                    let collisionInY = this.willCollide(this.newX, newPosY, mapObjects);
+                    
+                    // Si no hay colisión en X y Y, mover el personaje
+                    if (!collisionInX && !collisionInY) {
+                        this.newX = newPosX;
+                        this.newY = newPosY;
+                        moved = true; // Se movió una vez
+                    } else {
+                        break; // Si hay colisión en cualquiera de los pasos, detenerse
+                    }
+                }
+                this.collEnemy = null; // Restablecer la variable de colisión
             }
         }
     
@@ -353,25 +500,6 @@ class Criature extends Entity {
             if (this.opacity !== undefined) {
                 context.globalAlpha = this.opacity;
             }
-    
-            // Aplicar rotación si se necesita
-            if (this.rotation !== 0) {
-                const centerX = adjustedX + this.width / 2;
-                const centerY = adjustedY + this.height / 2;
-    
-                // Guardar el estado del contexto
-                context.save();
-    
-                // Trasladar al centro de la imagen para rotar alrededor de su centro
-                context.translate(centerX, centerY);
-    
-                // Aplicar la rotación
-                context.rotate(this.rotation * Math.PI / 180);
-    
-                // Trasladar de nuevo a la posición original
-                context.translate(-centerX, -centerY);
-            }
-    
             // Si direction es true, voltear la imagen en X
             if (this.direction) {
                 context.save(); // Guardar el estado actual del contexto

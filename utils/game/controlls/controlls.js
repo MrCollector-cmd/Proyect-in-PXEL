@@ -8,12 +8,13 @@ let controlls = {
     down:false,
     left:false,
     right:false,
+    interact: false,
     inventoryOpen: false,
     inventoryPressed: false,
     lastInventoryPress: 0,
     inventoryDelay: 200,
     refresh:function(){
-        if (keyboard.keyDown(controllsKey.up) || keyboard.keyDown(controllsKey.upSec) ) {
+        if (keyboard.keyDown(controllsKey.up)||keyboard.keyDown(controllsKey.upSec)) {
             controlls.up = true;
         }
         if (keyboard.keyDown(controllsKey.down)) {
@@ -40,7 +41,7 @@ let controlls = {
             controlls.inventoryPressed = false;
         }
         if (keyboard.keyDown(controllsKey.interact)) {
-            console.log('Interact')
+            controlls.interact = true
         }
     },
     restart:function(){
@@ -50,6 +51,7 @@ let controlls = {
         controlls.left = false;
         controlls.dash = false;
         controlls.inventoryPressed = false;
+        controlls.interact = false
     }
 }
 
