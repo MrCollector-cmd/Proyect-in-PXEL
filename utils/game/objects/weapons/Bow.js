@@ -1,9 +1,9 @@
-import { Projectile } from "../../objects/Projectile.js";
 import { mouseControlls } from "../../controlls/mouse.js";
 import { BowAssets } from "../../assets/BowAssets.js";
+import { projectils } from "./proyectils.js";
 
 class Bow {
-    constructor() {
+    constructor({maxCharge = 1000, cooldown = 300} = {}) {
         // Inicializar frames y tamaños
         this.frames = BowAssets.getFrames();
         this.currentFrame = this.frames.frame1;
@@ -14,14 +14,14 @@ class Bow {
         this.charging = false;
         this.charge = 0;
         this.chargeStartTime = 0;
-        this.maxCharge = 1000;
-        this.cooldown = 300;
+        this.maxCharge = maxCharge;
+        this.cooldown = cooldown;
         this.lastProjectileTime = 0;
 
         // Asegurarnos de que las imágenes estén cargadas
         this.checkImagesLoaded();
     }
-
+    
     //verifica si las imagenes estan cargadas
     checkImagesLoaded() {
         if (!BowAssets.areImagesLoaded()) {
@@ -112,7 +112,7 @@ class Bow {
     }
 
     //obtiene la posicion del arco
-    getBowPosition(playerX, playerY) {
+    getPosition(playerX, playerY) {
         const handOffsetX = 26;
         const handOffsetY = 15;
         
@@ -156,13 +156,14 @@ class Bow {
         const power = 15 + chargeRatio * 20;
         const gravity = 1.5 - chargeRatio * 1.3;
         
-        const projectile = new Projectile(
+        const projectile = new projectils(
             playerX + 12,
             playerY,
             targetX,
             targetY,
             power,
-            gravity
+            gravity,
+            "src/weapons/Arrow.png"
         );
 
         this.lastProjectileTime = Date.now();

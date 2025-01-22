@@ -3,7 +3,8 @@ import { controllsKey } from "../../configs/controllsKeys.js";
 
 let controlls = {
     pushUp:false,
-    dash:false,
+    dashQ:false,
+    dashE:false,
     up:false,
     down:false,
     left:false,
@@ -26,8 +27,11 @@ let controlls = {
         if (keyboard.keyDown(controllsKey.right)) {
             controlls.right = true;
         }
-        if (keyboard.keyDown(controllsKey.dash)) {
-            controlls.dash = true;
+        if (keyboard.keyDown(controllsKey.dashQ)) {
+            controlls.dashQ = true;
+        }
+        if (keyboard.keyDown(controllsKey.dashE)) {
+            controlls.dashE = true;
         }
         if (keyboard.keyDown(controllsKey.inventory) || keyboard.keyDown(controllsKey.esc)) {
             const currentTime = Date.now();
@@ -49,7 +53,8 @@ let controlls = {
         controlls.right = false;
         controlls.down = false;
         controlls.left = false;
-        controlls.dash = false;
+        controlls.dashE = false;
+        controlls.dashQ = false;
         controlls.inventoryPressed = false;
         controlls.interact = false
     }

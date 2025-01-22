@@ -2,8 +2,8 @@ import { Criature } from "../rect.js";
 import { contextThisGame } from "../context.js";
 
 class BasicEnemy extends Criature {
-    constructor(x, y, width, height, img, type, stats) {
-        super(x, y, width, height, img, type, stats);
+    constructor(x, y, width, height, img, type, stats, id) {
+        super(x, y, width, height, img, type, stats, id);
         this.initializeProperties();
     }
 
@@ -126,21 +126,10 @@ class BasicEnemy extends Criature {
             player.y < this.y + this.height &&
             player.y + player.height > this.y) {
                 
-            // Calcular el vector de colisión
-            const deltaX = player.x - this.x;
-            const deltaY = player.y - this.y;
-    
             // Verificar cooldown antes de dañar al jugador
             if (currentTime - this.lastAttackTime >= this.ATTACK_COOLDOWN) {
                 if (player.stats && player.stats.heal > 0) {
-                     // Calcular el ángulo de colisión en radianes
-                    const angleInRadians = Math.atan2(deltaY, deltaX);
-                    // Convertir a grados
-                    const angleInDegrees = angleInRadians * (180 / Math.PI);
                     player.stats.heal -= this.stats.damage;
-                    if(player.stats.heal > this.stats.damage){
-                        player.collEnemy = {rad:angleInDegrees.toFixed(2)};
-                    }
                     this.lastAttackTime = currentTime; // Actualizar el tiempo del último ataque
                 }
             }

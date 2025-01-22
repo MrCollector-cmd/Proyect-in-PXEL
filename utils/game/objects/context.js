@@ -1,7 +1,9 @@
 import { BIOMES } from "../../configs/data/biomeTypes.js"
 import { imagesController } from "../../configs/imagesController.js";
-
+import { size } from "../../configs/size.js";
 let contextThisGame = {
+    camera:null,
+    dimensions: {width:0,height:0},
     biome: null,
     sizeInchuncks: null,
     chunksLoaded: 5,
@@ -22,6 +24,8 @@ let contextThisGame = {
         contextThisGame.filter = BIOMES[biome].filter
         contextThisGame.levelAct = 1;
         contextThisGame.background = imagesController.loadImage(BIOMES[biome].background)
+        contextThisGame.dimensions.width = size.tils * (contextThisGame.sizeInchuncks * 20)
+        contextThisGame.dimensions.height = size.tils * 20;
     },
     updateContext:function() {
         if (contextThisGame.next == false) {

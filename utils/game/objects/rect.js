@@ -188,11 +188,13 @@ class Criature extends Entity {
         this.isDashing = false;
         this.doubleJumpAvailable = true;
         this.collEnemy = null;
-        this.newX = 0
-        this.newY = 0
+        this.regeneration = false
+        this.regenerationStartTime = null;
+        this.equipped = false
+        this.attack = false;
     }
 
-    move(mapObjects) {
+    move(mapObjects, camera) {
         this.refreshColl();
         const speed = 10;
         const jumpForce = -25;
@@ -209,11 +211,16 @@ class Criature extends Entity {
         this.handleJump(jumpForce, gravity, maxFallSpeed);
         this.handleMovement(speed, mapObjects);
         this.handleDash(speedDash, dashDistance);
+        this.handleEnemyCollision(Date.now())
         this.applyMovement();
+        this.checkCollisionsWithEnemy(mapObjects)
         this.checkCollisions(mapObjects);
         this.interacts(mapObjects);
         this.updatePosition();
         this.updateStats(Date.now())
+        if (this.equipped !== false && this.equipped.type == 'distance') {
+            this.handleFire(camera)
+        }
     }
 
     interacts(mapObjects) {
@@ -248,6 +255,7 @@ class Criature extends Entity {
         const STAMINA_RECOVERY_INTERVAL = 1900; // Intervalo de recuperación en milisegundos (1 segundo)
         const MAX_STAMINA = this.stats.maxStamina; // Valor máximo de stamina
         const MAX_HEAL = this.stats.maxHeal; // Valor máximo de vida
+        const MAX_XP = this.stats.maxXp; // Valor máximo de vida
     
         // Inicializar lastStaminaUpdate si no existe
         if (!this.lastStaminaUpdate) {
@@ -267,6 +275,13 @@ class Criature extends Entity {
     
             // Actualizar lastStaminaUpdate al último intervalo completo
             this.lastStaminaUpdate += intervalsPassed * STAMINA_RECOVERY_INTERVAL;
+        }
+
+        // Verifica el Estado de la experiencia 
+        if (this.stats.xp >= MAX_XP) {
+            this.stats.level += 1
+            this.stats.xp -= MAX_XP
+            this.stats.maxXp += 10
         }
     }
 
@@ -326,42 +341,152 @@ class Criature extends Entity {
     }
     
     handleDash(speedDash, dashDistance) {
-        if (controlls.dash && !this.dash && !this.isDashing) {
+        // Detectar inicio del dash
+        if (this.stats.dash == 0) {
+            return
+        }
+        if ((controlls.dashQ || controlls.dashE) && !this.dash && !this.isDashing) {
             this.dash = true;
             this.isDashing = true;
-            this.velocityX = this.direction ? -speedDash : speedDash;
-            this.currentDashDistance = 0;
+    
+            // Determinar la dirección del dash
+            if (controlls.dashQ) {
+                this.velocityX = -speedDash; // Dash hacia la izquierda
+                this.direction = true;      // Establece dirección a la izquierda
+            } else if (controlls.dashE) {
+                this.velocityX = speedDash; // Dash hacia la derecha
+                this.direction = false;     // Establece dirección a la derecha
+            }
+    
+            this.currentDashDistance = 0; // Reiniciar distancia del dash
         }
     
-        if (this.dash && this.stats.dash > 0 ) {
-            const dashStep = this.velocityX;
+        // Manejar el dash activo
+        if (this.dash && this.stats.dash > 0) {
+            const dashStep = this.velocityX; // Movimiento del dash
             this.currentDashDistance += Math.abs(dashStep);
+    
             if (this.currentDashDistance >= dashDistance) {
+                // Terminar el dash si se alcanzó la distancia máxima
                 this.dash = false;
                 this.velocityX = 0;
-                if (this.stats.dash >0) {
-                    this.stats.dash -= 1
+    
+                if (this.stats.dash > 0) {
+                    this.stats.dash -= 1; // Reducir el recurso de dash
                 }
             } else {
+                // Continuar moviendo al jugador durante el dash
                 this.moveX = dashStep;
             }
         } else {
-            if (!controlls.dash) {
+            // Terminar el estado de dash si se sueltan los controles
+            if (!controlls.dashQ && !controlls.dashE) {
                 this.isDashing = false;
             }
         }
     }
+    handleFire(camera) {
+        // Modificar el evento mousedown
+        addEventListener('mousedown', (e) => {
+            if (e.button === 0 && this.equipped !== false) {
+                this.equipped.obj.startCharging();
+            }
+        });
     
+        // Agregar evento mouseup
+        addEventListener('mouseup', (e) => {
+            if (e.button === 0 && this.equipped !== false) {
+                let { offsetX, offsetY } = camera.getOffset();
+                
+                // Obtener la posición del arco
+                const bowPosition = this.equipped.obj.getPosition(
+                    this.x + this.width / 2,
+                    this.y + this.height / 2
+                );
+    
+                // Calcular la posición del mouse en el mundo del juego
+                const mouseWorldX = e.clientX + offsetX;
+                const mouseWorldY = e.clientY + offsetY;
+    
+                // Crear el proyectil
+                const projectile = this.equipped.obj.releaseCharge(
+                    bowPosition.x,
+                    bowPosition.y,
+                    mouseWorldX,
+                    mouseWorldY
+                );
+    
+                if (projectile && this.stats.proyectils !== undefined) {
+                    // Agregar el proyectil a la lista de proyectiles
+                    this.stats.proyectils.push(projectile);
+                }
+            }
+        });
+
+    }
+    handleMouseClick(camera) {
+        // Detecta cuando se hace clic izquierdo
+        addEventListener('mousedown', (e) => {
+            if (e.button === 0 && this.equipped !== false && this.equipped.type === 'sword') {
+                // Activar ataque físico cuando se haga clic izquierdo y se tenga la espada equipada
+                this.attack = true
+            }
+        });
+    }
+    handleFisicAttack(angle){
+        if (this.equipped !== false && this.equipped.type == 'sword' && this.attack == true) {
+            this.equipped.obj.startAnimation(angle)
+            this.equipped.obj.updateAnimation()
+        }
+    }
+
     applyMovement() {
         this.newX = this.x + this.moveX;
         this.newY = this.y + this.velocityY;
     }
+
+    handleEnemyCollision(currentTime) {
+        // Activar regeneración si no está ya activa
+        if (this.collEnemy == null) {
+            return
+        }
+        if (!this.regeneration) {
+            this.regeneration = true;
+            this.regenerationStartTime = currentTime;
+        }
     
+        // Definir el tiempo de regeneración
+        const regenerationDuration = 1500; // Tiempo en milisegundos
+        // Verificar si el tiempo de regeneración ha finalizado
+        if (this.regeneration && currentTime - this.regenerationStartTime >= regenerationDuration) {
+            this.regeneration = false;
+            this.regenerationStartTime = null;
+            this.collEnemy = null;
+        }
+    }
+    
+    checkCollisionsWithEnemy(mapObjects) {
+        const currentTime = Date.now(); // Obtener el tiempo actual
+    
+        for (let obj of mapObjects) {
+            if (obj.type === 'enemy') {
+                // Verificar colisión en el eje X y Y
+                if (
+                    this.x < obj.x + obj.width && // Borde derecho del jugador
+                    this.x + this.width > obj.x && // Borde izquierdo del jugador
+                    this.y < obj.y + obj.height && // Borde inferior del jugador
+                    this.y + this.height > obj.y   // Borde superior del jugador
+                ) {
+                    // Colisión detectada con un enemigo
+                    this.collEnemy = true
+                    this.handleEnemyCollision(currentTime);
+                }
+            }
+        }
+    }
+
     checkCollisions(mapObjects) {
         let isOnGround = false;
-        
-        // Paso para mover progresivamente
-        const stepSize = 10; // Tamaño del paso para el movimiento (puedes ajustar este valor)
         
         for (let obj of mapObjects) {
             if (obj.type === 'solid') {
@@ -419,41 +544,6 @@ class Criature extends Entity {
                     }
                 }
             }
-    
-            // Empujar al personaje cuando colisiona con un enemigo
-            if (this.collEnemy !== null) {
-                const pushForce = 100; // Fuerza de empuje total
-                const steps = Math.ceil(pushForce / stepSize); // Número de pasos que se darán (dependiendo del tamaño del paso)
-    
-                // Convertir el valor de rad (grados) a radianes
-                const radInRadians = this.collEnemy.rad * (Math.PI / 180); // Convertir grados a radianes
-                
-                // Calcular el desplazamiento en las direcciones X e Y usando el ángulo de colisión
-                const pushX = Math.cos(radInRadians) * stepSize; // Desplazamiento en X por paso
-                const pushY = Math.sin(radInRadians) * stepSize; // Desplazamiento en Y por paso
-                
-                let moved = false;
-    
-                // Realizar el empuje en pasos pequeños
-                for (let i = 0; i < steps; i++) {
-                    const newPosX = this.newX + pushX;
-                    const newPosY = this.newY + pushY;
-                    
-                    // Verificar si la nueva posición no causa otra colisión en ambos ejes X y Y
-                    let collisionInX = this.willCollide(newPosX, this.newY, mapObjects);
-                    let collisionInY = this.willCollide(this.newX, newPosY, mapObjects);
-                    
-                    // Si no hay colisión en X y Y, mover el personaje
-                    if (!collisionInX && !collisionInY) {
-                        this.newX = newPosX;
-                        this.newY = newPosY;
-                        moved = true; // Se movió una vez
-                    } else {
-                        break; // Si hay colisión en cualquiera de los pasos, detenerse
-                    }
-                }
-                this.collEnemy = null; // Restablecer la variable de colisión
-            }
         }
     
         if (!isOnGround) {
@@ -481,6 +571,30 @@ class Criature extends Entity {
         this.pCollRight = false;
     }
     draw(context, offsetX, offsetY) {
+        if (this.regeneration) {
+            // Inicializar las propiedades de control si no existen
+            if (this.lastBlinkTime === undefined) {
+                this.lastBlinkTime = Date.now(); // Tiempo inicial
+                this.isVisible = true; // Inicialmente visible
+            }
+    
+            // Calcular el tiempo transcurrido desde el último cambio de visibilidad
+            const now = Date.now();
+            if (now - this.lastBlinkTime >= 100) { // Cambiar cada segundo
+                this.isVisible = !this.isVisible; // Alternar visibilidad
+                this.lastBlinkTime = now; // Actualizar el último tiempo de parpadeo
+            }
+        } else {
+            // Si no está en regeneración, asegurarse de que esté visible y reiniciar
+            this.isVisible = true;
+            this.lastBlinkTime = undefined;
+        }
+    
+        // Si no es visible, salir del método sin dibujar
+        if (!this.isVisible) {
+            return;
+        }
+    
         if (this.img.complete && this.img.width !== 0) {
             const adjustedX = this.x - offsetX;
             const adjustedY = this.y - offsetY;
@@ -500,6 +614,7 @@ class Criature extends Entity {
             if (this.opacity !== undefined) {
                 context.globalAlpha = this.opacity;
             }
+    
             // Si direction es true, voltear la imagen en X
             if (this.direction) {
                 context.save(); // Guardar el estado actual del contexto
@@ -531,13 +646,8 @@ class Criature extends Entity {
     
             // Restaurar la opacidad original
             context.globalAlpha = originalAlpha;
-    
-            // Restaurar el estado del contexto después de la rotación
-            if (this.rotation !== 0) {
-                context.restore();
-            }
         }
-        // Crea un aro de luz
+        // Crear un aro de luz
         const centerX = this.x + this.width / 2 - offsetX;
         const centerY = this.y + this.height / 2 - offsetY;
         const lightRadius = 250;
@@ -550,6 +660,30 @@ class Criature extends Entity {
         context.arc(centerX, centerY, lightRadius, 0, Math.PI * 2);
         context.fillStyle = gradient;
         context.fill();
+    }
+    drawSelectedItem(ctx,offsetX, offsetY) {
+        if (this.equipped.isEquipped) {   //verifica si el item seleccionado es el arco
+            const playerCenterX = this.x + this.width/2;
+            const playerCenterY = this.y + this.height/2;
+            
+            //dibuja el arco en la mano del jugador
+            this.equipped.obj.drawInHand(
+                ctx,
+                playerCenterX,
+                playerCenterY,
+                offsetX,
+                offsetY
+            );
+        }if (this.equipped.isEquipped && this.attack == true && this.equipped.type == 'sword') {   //verifica si el item seleccionado es el arco
+            const playerCenterX = this.x + this.width/2;
+            const playerCenterY = this.y + this.height/2;
+            //dibuja el arco en la mano del jugador
+            this.handleFisicAttack(0,offsetX,offsetY,playerCenterX,playerCenterY)
+        }if (!this.attack && this.equipped.obj && this.equipped.obj.shouldReturn) {
+            const playerCenterX = this.x + this.width/2;
+            const playerCenterY = this.y + this.height/2;
+            this.handleFisicAttack(-45,offsetX,offsetY,playerCenterX,playerCenterY)
+        }
     }
 }
 

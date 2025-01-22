@@ -1,12 +1,15 @@
 import { imagesController } from "../../configs/imagesController.js";
+import { contextThisGame } from "../objects/context.js";
 let mouseControlls = {
+    mouseClick:false,
     mouseOut: false,
     img: null, // Lo dejamos como null inicialmente
     height: 60,
     width: 60,
     offsetX: null,
     offsetY: null,
-
+    clickPosition: { x: null, y: null }, // Posición del clic más reciente
+    elementPosition: null, // posicion
     getPosMouse: function() {
         if (mouseControlls.offsetX === null || mouseControlls.offsetY === null && !mouseControlls.mouseOut) {
             addEventListener('mousemove', (e) => {
@@ -26,7 +29,39 @@ let mouseControlls = {
         }
         return {posX: mouseControlls.offsetX, posY: mouseControlls.offsetY, mouseOut: mouseControlls.mouseOut};
     },
-
+    
+     // Detectar cuándo el botón del ratón se pulsa y se suelta
+     handleMousePress: function() {
+        const canvas = document.getElementById("gameWorld");
+    
+        canvas.addEventListener('mousedown', (e) => {
+            if (mouseControlls.mouseClick == false) {
+                // Registra la posición del clic solo si no hay un clic previo registrado
+                const rect = canvas.getBoundingClientRect();
+                mouseControlls.clickPosition.x = e.clientX - rect.left; // Posición relativa al canvas
+                mouseControlls.clickPosition.y = e.clientY - rect.top;  // Posición relativa al canvas
+                mouseControlls.mouseClick = true
+            }
+        });
+    
+        canvas.addEventListener('mouseup', () => {
+            // Restablece la posición del clic cuando se suelta el botón
+            if (mouseControlls.clickPosition.x !== null && mouseControlls.clickPosition.y !== null) {
+                console.log('Mouse liberado');
+                mouseControlls.clickPosition.x = null;
+                mouseControlls.clickPosition.y = null;
+                mouseControlls.mouseClick = false
+            }
+        });
+    },
+    handleClick: function() {
+        return new Promise((resolve) => {
+            addEventListener('click', (e) => {
+                resolve(e); // Devuelve el evento 'e' a través de la promesa
+            }, { once: true }); // Usa { once: true } para eliminar automáticamente el listener después de un clic
+        });
+    },
+    
     loadMouseImage: function() {
         // Carga la imagen del puntero desde el caché
         mouseControlls.img = imagesController.loadImage("src/pointer/pointer1.png");

@@ -1,31 +1,30 @@
-import { Bow } from "./weapons/Bow.js";
-
 class Item {
-    constructor(id, name, type) {
+    constructor(id, name, type,obj) {
         this.id = id;
         this.name = name;
         this.type = type;
+        this.obj = obj
         this.quantity = 1;
         this.isEquipped = false;
-        this.weapon = type === "test" ? new Bow() : null;
     }
 
     updateFrame(chargeRatio = 0) {
-        if (this.weapon) {
-            this.weapon.updateFrame(chargeRatio);
+        if (this.obj) {
+            this.obj.updateFrame(chargeRatio);
         }
     }
 
     draw(context, x, y, size) {
         if (this.isEquipped) {
-            context.strokeStyle = 'gold';
+            context.strokeStyle = 'black';
             context.lineWidth = 3;
             context.strokeRect(x, y, size, size);
             context.lineWidth = 1;
+            this.obj.drawInInventory(context, x, y, size);
         }
 
-        if (this.weapon) {
-            this.weapon.drawInInventory(context, x, y, size);
+        if (!this.isEquipped) {
+            this.obj.drawInInventory(context, x, y, size);
         }
 
         if (this.quantity > 1) {
@@ -36,8 +35,8 @@ class Item {
     }
 
     drawInHand(context, x, y, offsetX, offsetY) {
-        if (this.isEquipped && this.weapon) {
-            this.weapon.drawInHand(context, x, y, offsetX, offsetY);
+        if (this.isEquipped) {
+            this.obj.drawInHand(context, x, y, offsetX, offsetY);
         }
     }
 }

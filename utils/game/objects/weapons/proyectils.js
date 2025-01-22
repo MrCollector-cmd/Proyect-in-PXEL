@@ -1,32 +1,35 @@
-import { imagesController } from "../../configs/imagesController.js";
+import { imagesController } from "../../../configs/imagesController.js";
 
-class Projectile {
-    //constructor de la clase proyectil
-    constructor(x, y, targetX, targetY, power, gravity) {
-        this.x = x; //posicion x del proyectil
-        this.y = y; //posicion y del proyectil
+class projectils {
+    // Constructor de la clase proyectil
+    constructor(x, y, targetX, targetY, power, gravity, path, trajectoryType = "parabolic", id) {
+        this.x = x; // posición x del proyectil
+        this.y = y; // posición y del proyectil
+        this.id = id; // Id del proyectil
         
-        const angle = Math.atan2(targetY - y, targetX - x); //calcula el angulo de la flecha
-        this.velocityX = Math.cos(angle) * power; //velocidad x de la flecha
-        this.velocityY = Math.sin(angle) * power; //velocidad y de la flecha
-        this.angle = angle; //angulo de la flecha
+        const angle = Math.atan2(targetY - y, targetX - x); // calcula el ángulo de la flecha
+        this.velocityX = Math.cos(angle) * power; // velocidad x de la flecha
+        this.velocityY = Math.sin(angle) * power; // velocidad y de la flecha
+        this.angle = angle; // ángulo de la flecha
         
-        this.gravity = gravity; //gravedad de la flecha
-        this.width = 45; //ancho de la flecha
-        this.height = 15; //alto de la flecha
-        this.size = Math.max(this.width, this.height); //tamaño de la flecha
-        this.active = true; //estado del proyectil
-        this.maxDistance = 1000; //distancia maxima de la flecha
-        this.distanceTraveled = 0; //distancia recorrida por la flecha
-        this.startX = x; //posicion x inicial de la flecha
-        this.startY = y; //posicion y inicial de la flecha
+        this.gravity = gravity; // gravedad de la flecha
+        this.width = 45; // ancho de la flecha
+        this.height = 15; // alto de la flecha
+        this.size = Math.max(this.width, this.height); // tamaño de la flecha
+        this.active = true; // estado del proyectil
+        this.maxDistance = 1000; // distancia máxima de la flecha
+        this.distanceTraveled = 0; // distancia recorrida por la flecha
+        this.startX = x; // posición x inicial de la flecha
+        this.startY = y; // posición y inicial de la flecha
         
-        this.image = imagesController.loadImage("src/weapons/Arrow.png"); //carga la imagen de la flecha
+        this.image = imagesController.loadImage(path); // carga la imagen de la flecha
         
-        this.particles = []; //lista de partículas de la flecha
-        this.exploding = false; //estado de la explosion de la flecha
-        this.explosionDuration = 15; //duracion de la explosion de la flecha
-        this.explosionTimer = 0; //tiempo de la explosion de la flecha
+        this.particles = []; // lista de partículas de la flecha
+        this.exploding = false; // estado de la explosión de la flecha
+        this.explosionDuration = 15; // duración de la explosión de la flecha
+        this.explosionTimer = 0; // tiempo de la explosión de la flecha
+        
+        this.trajectoryType = trajectoryType; // Tipo de trayectoria (parabolic o lineal)
     }
 
     createExplosion() {
@@ -46,19 +49,19 @@ class Projectile {
         }
     }
 
-    //actualiza el proyectil
-    update(visibleEntities) {
+     // Actualiza el proyectil
+     update(visibleEntities) {
         if (this.exploding) {
             // Actualizar partículas
             this.particles = this.particles.filter(particle => {
                 particle.x += particle.vx;
                 particle.y += particle.vy;
-                particle.vy += 0.1; // Pequeña gravedad
+                particle.vy += 0.1; // pequeña gravedad
                 particle.life -= 0.1;
                 return particle.life > 0;
             });
 
-            //actualiza el tiempo de la explosion de la flecha
+            // Actualiza el tiempo de la explosión de la flecha
             this.explosionTimer++;
             if (this.explosionTimer >= this.explosionDuration && this.particles.length === 0) {
                 this.active = false;
@@ -66,34 +69,38 @@ class Projectile {
             return;
         }
 
-        const newX = this.x + this.velocityX; //nueva posicion x de la flecha
-        const newY = this.y + this.velocityY; //nueva posicion y de la flecha
-        
-        this.angle = Math.atan2(this.velocityY, this.velocityX); //angulo de la flecha
-        
+        const newX = this.x + this.velocityX; // nueva posición x de la flecha
+        const newY = this.y + this.velocityY; // nueva posición y de la flecha
+
+        this.angle = Math.atan2(this.velocityY, this.velocityX); // ángulo de la flecha
+
         for (let entity of visibleEntities) {
             if (entity.type === 'solid') {
-                //verifica si la flecha colisiona con un terreno
+                // Verifica si la flecha colisiona con un terreno
                 if (this.checkCollisionWithTerrain(entity, newX, newY)) {
                     this.createExplosion();
                     return;
                 }
             }
         }
-        
-        this.x = newX; //nueva posicion x de la flecha
-        this.y = newY; //nueva posicion y de la flecha
-        this.velocityY += this.gravity; //velocidad y de la flecha
 
-        //calcula la distancia recorrida por la flecha
+        this.x = newX; // nueva posición x de la flecha
+        this.y = newY; // nueva posición y de la flecha
+
+        // Aplica gravedad solo si la trayectoria no es lineal
+        if (this.trajectoryType !== "lineal") {
+            this.velocityY += this.gravity; // velocidad y de la flecha
+        }
+
+        // Calcula la distancia recorrida por la flecha
         this.distanceTraveled = Math.sqrt(
-            Math.pow(this.x - this.startX, 2) + 
+            Math.pow(this.x - this.startX, 2) +
             Math.pow(this.y - this.startY, 2)
         );
 
-        //verifica si la distancia recorrida por la flecha es mayor que la distancia maxima
+        // Verifica si la distancia recorrida por la flecha es mayor que la distancia máxima
         if (this.distanceTraveled > this.maxDistance) {
-            this.createExplosion(); //crea la explosion de la flecha
+            this.createExplosion(); // crea la explosión de la flecha
         }
     }
 
@@ -135,13 +142,13 @@ class Projectile {
     }
 
     //verifica si la flecha colisiona con un terreno
-    checkCollisionWithTerrain(terrain, newX, newY) {
+    checkCollisionWithTerrain(terrain) {
         const collisionRadius = this.height; //radio de colision de la flecha
         return (
-            newX + collisionRadius > terrain.x &&
-            newX - collisionRadius < terrain.x + terrain.width &&
-            newY + collisionRadius > terrain.y &&
-            newY - collisionRadius < terrain.y + terrain.height
+            this.x + collisionRadius > terrain.x &&
+            this.x - collisionRadius < terrain.x + terrain.width &&
+            this.y + collisionRadius > terrain.y &&
+            this.y - collisionRadius < terrain.y + terrain.height
         );
     }
 
@@ -165,32 +172,8 @@ class Projectile {
 
         // Definir el radio de colisión (puedes ajustar este valor)
         const collisionRadius = (enemy.width + enemy.height) / 4;
-
         // Retornar true si hay colisión
         return distance < collisionRadius;
-    }
-
-    //actualiza los proyectiles
-    static updateProjectiles(projectiles, enemies, visibleEntities) {
-        return projectiles.filter(projectile => {
-            projectile.update(visibleEntities);
-            
-            //verifica si la flecha colisiona con un enemigo
-            for (let enemy of enemies) {
-                if (projectile.checkEnemyCollision(enemy)) {
-                    if (enemy.stats && enemy.stats.heal > 0) {
-                        enemy.stats.heal -= 2;
-                        if (enemy.stats.heal <= 0) {
-                            enemies = enemies.filter(e => e !== enemy);
-                        }
-                    }
-                    projectile.createExplosion();
-                    return true;
-                }
-            }
-            
-            return projectile.active;
-        });
     }
 
     //dibuja los proyectiles
@@ -206,4 +189,4 @@ class Projectile {
     }
 }
 
-export { Projectile }; 
+export {projectils}

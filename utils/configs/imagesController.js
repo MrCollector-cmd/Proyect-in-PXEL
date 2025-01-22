@@ -32,9 +32,25 @@ const imagesController = {
         return this.imageCache[path];
     },
 
-    // Limpiar todo el caché de imágenes
+    // Limpiar todo el caché de imágenes almacenado en memoria
     clearCache() {
         this.imageCache = {};
+    },
+
+    // Limpiar las imágenes almacenadas en la Cache API del navegador
+    async clearImageCache() {
+        const cacheKeys = await caches.keys(); // Obtiene todos los nombres de caché
+        for (const cacheName of cacheKeys) {
+            const cache = await caches.open(cacheName); // Abre cada caché
+            const requests = await cache.keys(); // Obtiene todas las solicitudes en el caché
+
+            for (const request of requests) {
+                if (request.url.endsWith('.png') || request.url.endsWith('.jpg') || request.url.endsWith('.jpeg') || request.url.endsWith('.gif')) {
+                    await cache.delete(request); // Elimina imágenes con extensiones específicas
+                    console.log(`Imagen eliminada del caché: ${request.url}`);
+                }
+            }
+        }
     }
 };
 

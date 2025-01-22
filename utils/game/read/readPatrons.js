@@ -7,9 +7,8 @@ const readPatrons = {
     patronsMid: null,
     patronsEnd: platformsEnd,
     patronStart:platformsIni,
-    chunkSize: 20,
+    chunkSize:20,
     dataMap: [],
-    treePrime: true,
     // Selecciona un patrón aleatorio
     getRandomPatron: function (patrons) {
         const keys = Object.keys(patrons);
@@ -19,7 +18,7 @@ const readPatrons = {
     // Genera datos de posición para cada rectángulo
     locatePoints: function (chunkIndex, index, patronsEndOrStart) {
         const offsetX = chunkIndex * readPatrons.chunkSize * size.tils;
-    
+     
         // Si se pasa patronName, buscamos el patrón correspondiente
         const pattern = patronsEndOrStart.patronStart
             ? readPatrons.getRandomPatron(readPatrons.patronStart)
@@ -493,7 +492,7 @@ const readPatrons = {
     
         return entities; // Devuelve el array con las nuevas entidades
     },
-createIluminations: function (map, biomeType = null) {
+    createIluminations: function (map, biomeType = null) {
         const entities = [];
         if (biomeType == null) {
             return;

@@ -9,14 +9,25 @@ import { readPatrons } from "../read/readPatrons.js";
 import { particles } from "../stetics/particles.js";
 import { controlls } from "../controlls/controlls.js";
 import { BasicEnemy } from "./enemies/BasicEnemy.js";
-import { Inventory } from "./Inventory.js";
-import { Projectile } from "./Projectile.js";
 import { Bow } from "./weapons/Bow.js";
 import { UI } from "./Ui/layerOfUi.js";
+import { BIOME_MOBS } from "../../configs/data/biomeMobs.js";
+import { Crossbow } from "./weapons/Crossbow.js";
+import { inventory } from "./Ui/Inventory.js";
+import { Item } from "./Item.js";
+import { projectils } from "./weapons/proyectils.js";
+import { imagesController } from "../../configs/imagesController.js";
+import { proyectilBehaivior } from "./weapons/projectileBehavior.js";
+import { Sword } from "./weapons/Sword.js";
 class Game {
     constructor() {
         // //////////////////////////////////////////////////////////////////////
-        this.spawned = false
+        imagesController.clearImageCache().then(() => {
+            console.log("Caché de imágenes eliminado correctamente.");
+        }).catch(err => {
+            console.error("Error al limpiar la caché de imágenes:", err);
+        });
+        this.spawn = {x:0,y:0}
         this.canvas = document.getElementById('gameWorld');
         this.updateCanvasSize();
         this.context = this.canvas.getContext('2d');
@@ -26,7 +37,7 @@ class Game {
         this.enemiesCreated = false;
         this.map = new Map(contextThisGame.sizeInchuncks); // Inicializamos el mapa
         // Cargar al jugador
-        this.loadPlayer(0, 0, size.tils, size.tils, "src/skins/skinD.png", "player", { heal: 10, damage: 10, dash:5, maxHeal:10, maxStamina:5});
+        this.loadPlayer(0, 0, size.tils, size.tils, "src/skins/skinD.png", "player", { heal: 10, damage: 10, dash:5, maxHeal:10, maxStamina:5, maxXp:100, level:1, xp:0,proyectils:[]});
        
         UI.dataPlayer = contextThisGame.player
         UI.getData();
@@ -34,7 +45,7 @@ class Game {
         const cameraWidth = this.canvas.width - 100; // 100px más pequeña que el canvas
         const cameraHeight = this.canvas.height - 100; // Agrega margen extra a la altura
         this.camera = new Camera(cameraWidth, cameraHeight, cameraWidth / 2, cameraHeight / 2);
-
+        contextThisGame.camera = this.camera
         //area visible
         this.visibleEntitiesFirstLayer = []
         this.waterEntitis = []
@@ -44,62 +55,46 @@ class Game {
     
         // ////////////////////////////////////////////////////////////////////////
         //crear el inventario
-        this.inventory = new Inventory();
-
+        this.inv = new inventory()
+        UI.dataInventory = this.inv
+        let item = new Item('weapon',"Bow",'distance', new Bow())
+        let item2 = new Item('weapon',"Crossbow",'distance', new Crossbow())
+        let item3 = new Item('weapon',"Katana",'sword', new Sword())
+        this.bow = item.obj
+        UI.dataInventory.addItem(item2)
+        UI.dataInventory.addItem(item)
+        UI.dataInventory.addItem(item3)
+        // ////////////////////////////////////////////////////////////////////
         // Inicializar el arco
-        this.bow = new Bow();
-
-        // Modificar el evento mousedown
-        this.canvas.addEventListener('mousedown', (e) => {
-            if (e.button === 0 && 
-                this.inventory.selectedItem && 
-                this.inventory.selectedItem.type === "test") {
-                this.bow.startCharging();
-            }
-        });
-
-        // Agregar evento mouseup
-        this.canvas.addEventListener('mouseup', (e) => {
-            if (e.button === 0 && this.bow.charging) {
-                const { offsetX, offsetY } = this.camera.getOffset();
-                const player = contextThisGame.player;
-                
-                // Obtener la posición del arco
-                const bowPosition = this.bow.getBowPosition(
-                    player.x + player.width/2,
-                    player.y + player.height/2
-                );
-                
-                const mouseWorldX = e.clientX + offsetX;
-                const mouseWorldY = e.clientY + offsetY;
-                
-                const projectile = this.bow.releaseCharge(
-                    bowPosition.x,
-                    bowPosition.y,
-                    mouseWorldX,
-                    mouseWorldY
-                );
-                
-                if (projectile) {
-                    this.projectiles.push(projectile);
-                }
-            }
-        });
-
         this.projectiles = [];
     }
 
-    createEnemies(positions) {
+    createEnemies(positions, biome) {
+        // Asegúrate de que el bioma exista en el objeto BIOME_MOBS
+        if (!BIOME_MOBS[biome]) {
+            console.error(`El bioma "${biome}" no existe.`);
+            return;
+        }
+    
+        // Obtener los enemigos disponibles en el bioma
+        const availableEnemies = BIOME_MOBS[biome];
+    
         positions.forEach(pos => {
+            // Seleccionar un enemigo aleatorio del bioma
+            const enemyId = Math.floor(Math.random() * Object.keys(availableEnemies).length) + 1;
+            const enemyData = availableEnemies[enemyId];
+    
+            // Crear el enemigo con un objeto de estadísticas único
             const enemy = new BasicEnemy(
                 pos.x, 
                 pos.y - 1 * size.tils, 
                 size.tils, 
                 size.tils, 
-                'src/terrain/swamp/enemy/slime.png', 
+                enemyData.sprite,  // Usar el sprite del enemigo
                 "enemy", 
-                { heal: 5, damage: 2 }
+                { heal: enemyData.heal, damage: enemyData.damage, xp:enemyData.xp }  // Aquí creas un objeto nuevo con sus estadísticas
             );
+    
             this.enemies.push(enemy);
         });
     }
@@ -159,7 +154,7 @@ class Game {
             this.map.map.index4 = readPatrons.createEntitiesFromRandomPositions(this.map.map.index1,null,"swamp",['Mushrooms',"MushroomLightBottom","MushroomLightTop",'glowUp1','glowUp2','glowUp3','glowUp4'])
             let res = readPatrons.getForwardRandomPositions(this.map.map.index1, 13)
             // Crear múltiples enemigos en diferentes posiciones
-            this.createEnemies(res);
+            this.createEnemies(res,'swamp');
             this.map.map.index5=readPatrons.createIluminations(this.map.map.index1,'swamp')
         }
     }
@@ -302,7 +297,8 @@ class Game {
 
         //dibuja al jugador
         contextThisGame.player.draw(this.context, offsetX, offsetY);
-        this.drawSelectedItem(offsetX, offsetY);
+        contextThisGame.player.drawSelectedItem(this.context, offsetX, offsetY);
+        // this.drawSelectedItem(offsetX, offsetY);
 
         
         // dibuja una segunda capa
@@ -316,27 +312,29 @@ class Game {
 
         // sombras de la pantalla
         filters.drawBackground(this.context,'shadowsX')
-
-        // Dibujar el inventario si está abierto
-        if (controlls.inventoryOpen) {
-            this.inventory.isOpen = true;
-            this.inventory.draw(this.context);
-        } else {
-            this.inventory.isOpen = false;
-        }
-
         // Dibujar proyectiles
-        this.drawProjectiles(offsetX, offsetY);
+        proyectilBehaivior.drawProjectiles(this.context,offsetX, offsetY,this.projectiles,this.camera);
 
         //Dibuja la UI
         UI.drawPorcent(this.context)
         UI.drawUi(this.context)
+        if (contextThisGame.player.stats.heal <= 0 || 
+            contextThisGame.player.x < 0 || 
+            contextThisGame.player.x > contextThisGame.dimensions.width || 
+            contextThisGame.player.y < 0 || 
+            contextThisGame.player.y > contextThisGame.dimensions.height){
 
-        if (contextThisGame.player.stats.heal <= 0) {
             contextThisGame.player.x = this.spawn.x 
             contextThisGame.player.y = this.spawn.y - 60
             contextThisGame.player.stats.heal = 10
             contextThisGame.player.movePlayer = false
+        }
+        // Dibujar el inventario si está abierto
+        if (controlls.inventoryOpen) {
+            UI.dataInventory.isOpen = true;
+            UI.drawInventory(this.context);
+        } else {
+            UI.dataInventory.isOpen = false;
         }
 
         //dibuja el mouse
@@ -344,6 +342,8 @@ class Game {
     }
 
     refresh(regTemp) {
+        const { offsetX, offsetY } = this.camera.getOffset();
+        this.projectiles = contextThisGame.player.stats.proyectils
         // Limpia el canvas
         this.clearCanvas();
         //carga los chunks del mapa
@@ -353,18 +353,20 @@ class Game {
             let water = readPatrons.findEntitiesWithIdFiveAndWidths(this.map.map.index1)
             this.map.map.index3 = water
         }
+        
         this.updateEnemies()
+        
         // comienzo de escucha de controles
         controlls.refresh();
 
         this.updateEnemies()
-        contextThisGame.player.move(this.visibleEntitiesFirstLayer, regTemp);
-        
+        contextThisGame.player.move(this.visibleEntitiesFirstLayer, this.camera, this.enemies);
+        contextThisGame.player.handleMouseClick(this.camera);
         // fin de escucha y reseteo de controles
         controlls.restart();
         
         // Actualizar proyectiles
-        this.updateProjectiles();
+        this.enemies = proyectilBehaivior.updateProyectils(this.projectiles,this.visibleEntitiesFirstLayer, this.enemies);
         
         // Actualiza la cámara para seguir al jugador
         this.updateCamera(mouseControlls.getPosMouse());
@@ -380,52 +382,6 @@ class Game {
             this.bow.updateFrame(chargeRatio);
         } else {
             this.bow.updateFrame(0);
-        }
-    }
-
-    //actualiza los proyectiles
-    updateProjectiles() {
-        this.projectiles = this.projectiles.filter(projectile => {
-            projectile.update(this.visibleEntitiesFirstLayer);
-            
-            // Verificar colisiones con enemigos
-            for (let enemy of this.enemies) {
-                if (projectile.checkEnemyCollision(enemy)) {
-                    if (enemy.stats && enemy.stats.heal > 0) {
-                        enemy.stats.heal -= 5;  //restar vida al enemigo
-                        if (enemy.stats.heal <= 0) {
-                            this.enemies = this.enemies.filter(e => e !== enemy);
-                        }
-                    }
-                    projectile.createExplosion(); //crear la explosion
-                    return true;
-                }
-            }
-            
-            return projectile.active; //retorna true si el proyectil esta activo
-        });
-    }
-
-    //dibuja los proyectiles
-    drawProjectiles(offsetX, offsetY) {
-        Projectile.drawProjectiles(this.projectiles, this.context, offsetX, offsetY, this.camera.getVisibleArea()); 
-    }
-
-    //dibuja el item seleccionado en la mano
-    drawSelectedItem(offsetX, offsetY) {
-        if (this.inventory.selectedItem && this.inventory.selectedItem.type === "test") {   //verifica si el item seleccionado es el arco
-            const player = contextThisGame.player;
-            const playerCenterX = player.x + player.width/2;
-            const playerCenterY = player.y + player.height/2;
-            
-            //dibuja el arco en la mano del jugador
-            this.bow.drawInHand(
-                this.context,
-                playerCenterX,
-                playerCenterY,
-                offsetX,
-                offsetY
-            );
         }
     }
 }
