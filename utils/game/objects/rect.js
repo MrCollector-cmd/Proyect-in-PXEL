@@ -2,6 +2,7 @@ import { controlls } from "../controlls/controlls.js";
 import { size } from "../../configs/size.js";
 import { imagesController } from "../../configs/imagesController.js";
 import { contextThisGame } from "./context.js";
+import { UI } from "./Ui/layerOfUi.js";
 class Rect {
     constructor(x, y, width, height) {
         this.x = x;
@@ -192,9 +193,10 @@ class Criature extends Entity {
         this.regenerationStartTime = null;
         this.equipped = false
         this.attack = false;
+        this.respawn = false;
     }
 
-    move(mapObjects, camera) {
+    move(mapObjects,context) {
         this.refreshColl();
         const speed = 10;
         const jumpForce = -25;
@@ -204,10 +206,12 @@ class Criature extends Entity {
         const dashDistance = 200;
 
         // Impide el movimiento si el personaje no esta bien cargado o si su vida es 0(cero)
-        if(this.stats === undefined || this.stats.heal <= 0){
+        if(this.stats === undefined || this.stats.heal <= 0 || contextThisGame.next){
             return
         }
+
         ////
+        this.interacts(mapObjects);
         this.handleJump(jumpForce, gravity, maxFallSpeed);
         this.handleMovement(speed, mapObjects);
         this.handleDash(speedDash, dashDistance);
@@ -215,19 +219,21 @@ class Criature extends Entity {
         this.applyMovement();
         this.checkCollisionsWithEnemy(mapObjects)
         this.checkCollisions(mapObjects);
-        this.interacts(mapObjects);
         this.updatePosition();
         this.updateStats(Date.now())
         if (this.equipped !== false && this.equipped.type == 'distance') {
-            this.handleFire(camera)
+            this.handleFire()
+        }if(this.equipped !== false && this.equipped.name == 'Bow'){
+            this.updateCharginOfBow()
         }
     }
 
     interacts(mapObjects) {
+        if(!Array.isArray(mapObjects))return
         if (controlls.interact) {
             // Recorrer los objetos filtrados
             for (let obj of mapObjects) {
-                 if (obj.id === 6) {
+                if (obj.id === 8) {
                     // Definir las dimensiones del objeto
                     let mapObject = {
                         x: obj.x,
@@ -246,7 +252,7 @@ class Criature extends Entity {
                     contextThisGame.next = true;
                 }
                 
-                 }
+                }
             }
         }
     }
@@ -336,7 +342,6 @@ class Criature extends Entity {
                 moveX = 0;  // Detener el movimiento horizontal si hay colisión a la izquierda
             }
         }
-    
         this.moveX = moveX;
     }
     
@@ -385,18 +390,30 @@ class Criature extends Entity {
             }
         }
     }
-    handleFire(camera) {
+    updateCharginOfBow(){
+        // Actualizar el frame del arco si está cargando
+        if(this.equipped.name == "Bow"){
+            if (this.equipped.obj.charging) {
+                const chargeTime = Date.now() - this.equipped.obj.chargeStartTime;
+                const chargeRatio = Math.min(chargeTime, this.equipped.obj.maxCharge) / this.equipped.obj.maxCharge;
+                this.equipped.obj.updateFrame(chargeRatio);
+            } else {
+                this.equipped.obj.updateFrame(0);
+            }
+        }
+    }
+    handleFire() {
         // Modificar el evento mousedown
         addEventListener('mousedown', (e) => {
-            if (e.button === 0 && this.equipped !== false) {
+            if (e.button === 0 && this.equipped !== false && this.equipped.type == 'distance') {
                 this.equipped.obj.startCharging();
             }
         });
     
         // Agregar evento mouseup
         addEventListener('mouseup', (e) => {
-            if (e.button === 0 && this.equipped !== false) {
-                let { offsetX, offsetY } = camera.getOffset();
+            if (e.button === 0 && this.equipped !== false && this.equipped.type !== 'sword') {
+                let { offsetX, offsetY } = contextThisGame.camera.getOffset();
                 
                 // Obtener la posición del arco
                 const bowPosition = this.equipped.obj.getPosition(
@@ -557,6 +574,7 @@ class Criature extends Entity {
     }
     
     willCollide(x, y, obj) {
+        if(x == undefined&&y == undefined&&obj == undefined)return
         return (
             x < obj.x + obj.width &&
             x + this.width > obj.x &&
@@ -679,10 +697,6 @@ class Criature extends Entity {
             const playerCenterY = this.y + this.height/2;
             //dibuja el arco en la mano del jugador
             this.handleFisicAttack(0,offsetX,offsetY,playerCenterX,playerCenterY)
-        }if (!this.attack && this.equipped.obj && this.equipped.obj.shouldReturn) {
-            const playerCenterX = this.x + this.width/2;
-            const playerCenterY = this.y + this.height/2;
-            this.handleFisicAttack(-45,offsetX,offsetY,playerCenterX,playerCenterY)
         }
     }
 }

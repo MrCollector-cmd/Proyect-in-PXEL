@@ -126,7 +126,7 @@ class inventory {
         } else {
             // Opcional: dibujar un marcador de posición mientras la imagen se carga
             context.fillStyle = 'rgba(50, 50, 50, 0.9)';
-            context.fillRect(startX, startY, inventoryWidth, inventoryHeight);
+            context.fillRect(startX, startY, inventoryWidth, inventoryHeight); 
         }
         // Dibujar slots e items
         for (let row = 0; row < rows; row++) {

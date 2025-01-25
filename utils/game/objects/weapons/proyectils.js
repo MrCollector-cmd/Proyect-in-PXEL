@@ -14,7 +14,7 @@ class projectils {
         
         this.gravity = gravity; // gravedad de la flecha
         this.width = 45; // ancho de la flecha
-        this.height = 15; // alto de la flecha
+        this.height = 10; // alto de la flecha
         this.size = Math.max(this.width, this.height); // tamaño de la flecha
         this.active = true; // estado del proyectil
         this.maxDistance = 1000; // distancia máxima de la flecha
@@ -105,41 +105,51 @@ class projectils {
     }
 
     draw(context, offsetX, offsetY) {
-        if (!this.active) return; //verifica si el proyectil esta activo
-
+        if (!this.active) return; // Verifica si el proyectil está activo
+    
         if (this.exploding) {
             // Dibujar partículas de explosión pixeladas y rojas
             this.particles.forEach(particle => {
-                context.globalAlpha = particle.life; //transparencia de las partículas
-                context.fillStyle = 'rgba(255, 0, 0, 0.8)';  //color de las partículas
+                context.globalAlpha = particle.life; // Transparencia de las partículas
+                context.fillStyle = 'rgba(255, 0, 0, 0.8)'; // Color de las partículas
                 
                 // Dibujamos un cuadrado en lugar de un círculo para el efecto pixelado
-                const size = particle.size; //tamaño de las partículas
+                const size = particle.size; // Tamaño de las partículas
                 context.fillRect(
-                    Math.round(particle.x - offsetX - size/2), 
-                    Math.round(particle.y - offsetY - size/2),
+                    Math.round(particle.x - offsetX - size / 2),
+                    Math.round(particle.y - offsetY - size / 2),
                     size, size
                 );
             });
-            context.globalAlpha = 1; //transparencia de las partículas
+            context.globalAlpha = 1; // Restablecer transparencia
             return;
         }
-
-        //dibuja la flecha
+    
+        // Dibuja la flecha con un borde
         if (this.image && this.image.complete) {
             context.save();
-            context.translate(this.x - offsetX, this.y - offsetY); //traslada la flecha a la posicion x e y
-            context.rotate(this.angle); //rota la flecha
-            
+            context.translate(this.x - offsetX, this.y - offsetY); // Traslada la flecha a la posición x e y
+            context.rotate(this.angle); // Rota la flecha
+    
+            // // Dibuja el borde alrededor del proyectil
+            // context.lineWidth = 3; // Ancho del borde
+            // context.strokeStyle = 'red'; // Color del borde
+            // context.strokeRect(
+            //     -this.width, -this.height / 2,
+            //     this.width, this.height
+            // );
+    
+            // Dibuja la imagen del proyectil
             context.drawImage(
                 this.image,
-                -this.width, -this.height/2,
+                -this.width, -this.height / 2,
                 this.width, this.height
             );
-            
+    
             context.restore();
         }
     }
+    
 
     //verifica si la flecha colisiona con un terreno
     checkCollisionWithTerrain(terrain) {

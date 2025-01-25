@@ -127,6 +127,9 @@ const UI = {
             return
         }
         this.dataInventory.draw(ctx,contextThisGame.player)
+    },
+    toggleInventory: function (controlls) {
+        this.dataInventory.isOpen = controlls.inventoryOpen;
     }
 };
 

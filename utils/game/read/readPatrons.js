@@ -76,8 +76,15 @@ const readPatrons = {
                 let texture = "src/terrain/terrainPlatform.png";
                 let repeatTexture = true;
                 let id = 1;
-    
-                if (cell === 3) {
+                
+                if (cell === -1) {
+                    objectType = "notColl";
+                    repeatTexture = false;
+                    texture = null
+                    notHeigt = true;
+                    id = -1;
+                }
+                else if (cell === 3) {
                     objectType = "solid";
                     texture = "src/terrain/terrainPlatform.png";
                     repeatTexture = true;
@@ -440,7 +447,7 @@ const readPatrons = {
             const y = group[0].y - 15; // Posición Y justo encima del grupo
 
             // Crear la nueva entidad
-            return new Entity(x, y, totalWidth, 15, "src/terrain/swamp/water.png", "notCollOp", false, 6, 0.3);
+            return new Entity(x, y, totalWidth, 15, "src/terrain/swamp/water.png", "notCollOp", false, 6, 0.2);
         });
     },
     createEntitiesFromCenterPositions: function (map, numPositions, typeBiome = null, include = []) {
