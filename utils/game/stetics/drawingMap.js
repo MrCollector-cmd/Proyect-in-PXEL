@@ -21,11 +21,9 @@ const toolsOfDrawing = {
             }
         });
     },
-    drawInLayers:function(order = null,allIndex,offsetX,offsetY,visibleArea,visibleEntities,context){
-        if(order==null || !contextThisGame.ini)return
-        let obj = [];
-        if(order == 'invert'){obj = allIndex.reverse()}
-        if(order == 'natural'){obj = allIndex}
+    drawInLayers:function(allIndex,offsetX,offsetY,visibleArea,visibleEntities,context){
+        if(!contextThisGame.ini)return
+        let obj = allIndex;
         // Almacenar entidades visibles
         visibleEntities = [];
         for (const indexDraw of obj) {
@@ -33,7 +31,7 @@ const toolsOfDrawing = {
                 contextThisGame.mapThisGame.map[indexDraw].forEach(entity => {
                     if (
                         entity.x + entity.width > visibleArea.left - 500&&
-                        entity.x < visibleArea.right + 500 &&
+                        entity.x < visibleArea.right + 200 &&
                         entity.y + entity.height > visibleArea.top &&
                         entity.y < visibleArea.bottom
                     ) {

@@ -1,7 +1,7 @@
 let size = {
     width: (window.innerWidth || document.body.clientWidth) ,
     height: window.innerHeight || document.body.clientHeight,
-    tils: 60,
+    tils: 60??window.innerHeight/12.5,
     scale: 1,
     initSize: function() {  
         window.addEventListener('resize', function() {

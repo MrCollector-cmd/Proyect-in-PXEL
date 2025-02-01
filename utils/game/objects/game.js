@@ -97,16 +97,13 @@ class Game {
         /////////Crea la base del mapa
         if (contextThisGame.mapThisGame.map.index1 === null) {
             contextThisGame.mapThisGame.initialize();
-            contextThisGame.player.mapObjects = contextThisGame.mapThisGame.map.index1;
         }
 
         if (contextThisGame.mapThisGame.currentChunkIndex < contextThisGame.mapThisGame.maxChunks - 2) {
-            contextThisGame.mapThisGame.advanceChunk();
-            contextThisGame.player.mapObjects = contextThisGame.mapThisGame.map.index1;
-            
+            contextThisGame.mapThisGame.advanceChunk();            
         }else{
-            contextThisGame.mapThisGame.ending()
             contextThisGame.mapThisGame.maxChunksCreated = true;
+            contextThisGame.mapThisGame.ending()
         }
         if(contextThisGame.mapThisGame.maxChunksCreated && !this.enemiesCreated){
             // //////// Crea los objetos grande Arboles... etc
@@ -118,8 +115,6 @@ class Game {
             // /////// Crea una segunda capa de decorativos
             contextThisGame.mapThisGame.map.index4 = readPatrons.createEntitiesFromRandomPositions(contextThisGame.mapThisGame.map.index1,null,"swamp",['Mushrooms',"MushroomLightBottom","MushroomLightTop",'glowUp1','glowUp2','glowUp3','glowUp4'])
             // /////// Crea los enemigos
-            // let res = readPatrons.getForwardRandomPositions(contextThisGame.mapThisGame.map.index1, 13)
-            // this.createEnemies(res,'swamp');
             readSpawn.spawnEnemies(contextThisGame.nameBiome,13)
             // /////// crea los objetos luminosos
             contextThisGame.mapThisGame.map.index5=readPatrons.createIluminations(contextThisGame.mapThisGame.map.index1,'swamp')
@@ -172,9 +167,9 @@ class Game {
             if(typeof elem[0] == "function" && elem[1] == 1){
                 elem[0](offsetX,offsetY,visibleArea,this.visibleEntitiesFirstLayer,this.context)
             }else if(typeof elem[0] == "function" && layer == "layer1" && elem[2] == 2){
-                this.visibleEntitiesFirstLayer = elem[0]('invert',elem[1],offsetX,offsetY,visibleArea,this.visibleEntitiesFirstLayer,this.context)
+                this.visibleEntitiesFirstLayer = elem[0](elem[1],offsetX,offsetY,visibleArea,this.visibleEntitiesFirstLayer,this.context)
             }else if(typeof elem[0] == "function" && layer == "layer2" && elem[2] == 3){
-                this.visibleEntitiesSecondLayer = elem[0]('natural',elem[1],offsetX,offsetY,visibleArea,this.visibleEntitiesSecondLayer,this.context)
+                this.visibleEntitiesSecondLayer = elem[0](elem[1],offsetX,offsetY,visibleArea,this.visibleEntitiesSecondLayer,this.context)
             }if(typeof elem[0] == "function" && elem[1] == 4 && layer == 'enemies'){
                 elem[0](offsetX,offsetY,visibleArea,this.context)
             }
@@ -233,11 +228,10 @@ class Game {
     }
 
     refresh(regTemp) {
-        // Limpia el canvas
-        this.clearCanvas();
         //carga los chunks del mapa
         this.loadMap();
         if(!contextThisGame.next){
+            this.clearCanvas();
             UI.toggleInventory(controlls);
         
             this.updateEnemiesMove()
@@ -251,6 +245,7 @@ class Game {
                 console.warn("Entidades visibles no están listas.");
                 this.visibleEntitiesFirstLayer = []; // Reinicia lista como arreglo vacío
             }
+            console.log(this.visibleEntitiesFirstLayer)
             contextThisGame.player.move(this.visibleEntitiesFirstLayer, this.context);
             contextThisGame.player.handleMouseClick(this.camera);
             // fin de escucha y reseteo de controles

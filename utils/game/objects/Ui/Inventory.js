@@ -133,14 +133,7 @@ class inventory {
             for (let col = 0; col < cols; col++) {
                 const slotIndex = row * cols + col;
                 const x = startX + this.padding + (col * (this.slotSize + this.padding));
-                const y = startY + this.padding + ((row + size.tils*0.03) * (this.slotSize + (this.padding - 3)));
-                
-                // // Dibujar slot
-                // context.fillStyle = 'rgba(70, 70, 70, 0.8)';
-                // context.fillRect(x, y, this.slotSize, this.slotSize);
-                // context.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-                // context.strokeRect(x, y, this.slotSize, this.slotSize);
-
+                const y = startY + this.padding + ((row + size.tils*0.028) * (this.slotSize + (this.padding - 3)));
                 // Dibujar item si existe en este slot
                 const item = this.items[slotIndex];
                 if (item) {
@@ -148,10 +141,6 @@ class inventory {
                 }
             }
         }
-        // mouseControlls.handleClick().then((event) => {
-        //     this.handleClick(event.clientX, event.clientY);
-        // });
-        // // Comprobar si hay algún objeto con isEquiped
         
         const isAnyEquipped = this.items.find(item => item?.isEquipped);
         if (isAnyEquipped) {

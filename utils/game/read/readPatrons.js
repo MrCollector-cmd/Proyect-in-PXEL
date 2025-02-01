@@ -18,7 +18,6 @@ const readPatrons = {
     // Genera datos de posición para cada rectángulo
     locatePoints: function (chunkIndex, index, patronsEndOrStart) {
         const offsetX = chunkIndex * readPatrons.chunkSize * size.tils;
-     
         // Si se pasa patronName, buscamos el patrón correspondiente
         const pattern = patronsEndOrStart.patronStart
             ? readPatrons.getRandomPatron(readPatrons.patronStart)

@@ -42,7 +42,7 @@ let mouseControlls = {
                 mouseControlls.clickPosition.y = e.clientY - rect.top;  // Posición relativa al canvas
                 mouseControlls.mouseClick = true
             }
-        });
+        },{once:true});
     
         canvas.addEventListener('mouseup', () => {
             // Restablece la posición del clic cuando se suelta el botón
@@ -52,7 +52,7 @@ let mouseControlls = {
                 mouseControlls.clickPosition.y = null;
                 mouseControlls.mouseClick = false
             }
-        });
+        },{once:true});
     },
     handleClick: function() {
         return new Promise((resolve) => {

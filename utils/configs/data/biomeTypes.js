@@ -13,7 +13,7 @@ const BIOMES = {
         },
         elements:[
             [toolsOfDrawing.drawWater,1]
-            ,[toolsOfDrawing.drawInLayers,["index1",'index2'],2]
+            ,[toolsOfDrawing.drawInLayers,['index2',"index1"],2]
             ,[toolsOfDrawing.drawInLayers,["index4",'index5'],3]
             ,[toolsOfDrawing.drawEnemies,4]]
     }

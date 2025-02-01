@@ -1,3 +1,5 @@
+import { size } from "../../configs/size.js";
+
 //carga las imagenes del arco
 const CrossbowAssets = {
     frames: {
@@ -6,8 +8,8 @@ const CrossbowAssets = {
     
     sizes: {
         inventory: {
-            width: 60,
-            height: 60
+            width: size.tils,
+            height: size.tils
         },
         hand: {
             width: 25,
@@ -27,7 +29,7 @@ const CrossbowAssets = {
 
         // Añadir un manejador de evento onerror para detectar si hubo algún problema al cargar la imagen
         this.frames.frame1.onerror = () => {
-            console.error('Error al cargar la imagen');4
+            console.error('Error al cargar la imagen');
         };
     },
 

@@ -126,7 +126,11 @@ class Crossbow {
         // Crea una instancia del sonido
         const projectileSound = new Audio('src/sounds/fire/miau.mp3');  // Reemplaza con la ruta de tu archivo de sonido
 
-        // Reproduce el sonido (opcionalmente puedes hacer que el sonido no se repita continuamente)
+        
+        // Ajusta el volumen (por ejemplo, al 50%)
+        projectileSound.volume = 0.5;
+
+        // Reproduce el sonido
         projectileSound.play();
 
         this.lastProjectileTime = Date.now();

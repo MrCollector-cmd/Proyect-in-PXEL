@@ -291,7 +291,7 @@ class Criature extends Entity {
         }
     }
 
-    handleJump(jumpForce, gravity, maxFallSpeed) {
+    handleJump(jumpForce, gravity, maxFallSpeed, mapObject) {
         if (controlls.up && this.remainingJumps > 0 && this.canJump) {
             // Realizar el salto si se cumple la condición de que el jugador puede saltar
             this.velocityY = jumpForce;
@@ -312,6 +312,7 @@ class Criature extends Entity {
         }
     
         // Si el jugador no está en el suelo, la gravedad debe actuar
+
         if (!this.pCollButton) {
             this.velocityY += gravity;
             if (this.velocityY > maxFallSpeed) {
@@ -408,7 +409,7 @@ class Criature extends Entity {
             if (e.button === 0 && this.equipped !== false && this.equipped.type == 'distance') {
                 this.equipped.obj.startCharging();
             }
-        });
+        },{once:true});
     
         // Agregar evento mouseup
         addEventListener('mouseup', (e) => {
@@ -438,7 +439,7 @@ class Criature extends Entity {
                     this.stats.proyectils.push(projectile);
                 }
             }
-        });
+        },{once:true});
 
     }
     handleMouseClick(camera) {
@@ -448,7 +449,7 @@ class Criature extends Entity {
                 // Activar ataque físico cuando se haga clic izquierdo y se tenga la espada equipada
                 this.attack = true
             }
-        });
+        },{once:true});
     }
     handleFisicAttack(angle){
         if (this.equipped !== false && this.equipped.type == 'sword' && this.attack == true) {
@@ -683,7 +684,6 @@ class Criature extends Entity {
         if (this.equipped.isEquipped) {   //verifica si el item seleccionado es el arco
             const playerCenterX = this.x + this.width/2;
             const playerCenterY = this.y + this.height/2;
-            
             //dibuja el arco en la mano del jugador
             this.equipped.obj.drawInHand(
                 ctx,
